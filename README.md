@@ -1,4 +1,3 @@
-# Functional Justin 1
 ## Some Scala 3 things
 
 This repo is a companion to a YouTube video (link to follow) and blog post (link to follow also).
