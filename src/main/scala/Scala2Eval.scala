@@ -10,7 +10,7 @@ object Scala2Eval extends App {
 
   type Env = Map[String, Int]
 
-  def eval(exp: Exp)(implicit env : Env): Int = {
+  def eval(exp: Exp)(using env : Env): Int = {
     exp match {
       case Var(id) => handleVar(id)
       case Val(value) => value

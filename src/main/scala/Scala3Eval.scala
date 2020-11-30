@@ -1,9 +1,9 @@
 object Scala3Eval extends App:
 
   enum Exp:
-    case Val(value: Int)
-    case Add(left: Exp, right: Exp)
-    case Var(identifier: String)
+    case Val(value: Int) extends Exp
+    case Add(left: Exp, right: Exp) extends Exp
+    case Var(identifier: String) extends Exp
   
   type Env = Map[String, Int]
   
