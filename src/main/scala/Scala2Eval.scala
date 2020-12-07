@@ -2,15 +2,18 @@ object Scala2Eval extends App {
 
   // An expression evaluator using Scala 2
 
-  sealed trait Exp
-  case class Val(value: Int) extends Exp
-  case class Add(left: Exp, right: Exp) extends Exp
-  case class Mul(left: Exp, right: Exp) extends Exp
-  case class Var(identifier: String) extends Exp
+  import Scala2Numeric._
+  import Scala2Numeric.Numeric.ops._
+  
+  sealed trait Exp[T]
+  case class Val[T](value: T) extends Exp[T]
+  case class Add[T](left: Exp[T], right: Exp[T]) extends Exp[T]
+  case class Mul[T](left: Exp[T], right: Exp[T]) extends Exp[T]
+  case class Var[T](identifier: String) extends Exp[T]
 
-  type Env = Map[String, Int]
+  type Env[T] = Map[String, T]
 
-  def eval(exp: Exp)(using env : Env): Int = {
+  def eval[T](exp: Exp[T])(implicit env : Env[T], numeric: Numeric[T]): T = {
     exp match {
       case Var(id) => handleVar(id)
       case Val(value) => value
@@ -19,14 +22,19 @@ object Scala2Eval extends App {
     }
   }
 
-  def handleAdd(l: Exp, r: Exp)(implicit env : Env) = eval(l) + eval(r)
-  def handleMul(l: Exp, r: Exp)(implicit env : Env) = eval(l) * eval(r)
-  def handleVar(s: String)(implicit env: Env) = env.getOrElse(s, 0)
+  def handleAdd[T](l: Exp[T], r: Exp[T])(implicit env : Env[T], numeric: Numeric[T]): T = eval(l) + eval(r)
+  def handleMul[T](l: Exp[T], r: Exp[T])(implicit env : Env[T], numeric: Numeric[T]): T = eval(l) * eval(r)
+  def handleVar[T](s: String)(implicit env: Env[T], numeric: Numeric[T]): T = env(s)
   
-  val exp1 : Exp = Mul(Var("z"), Add(Val(30), Mul(Var("x"), Var("y"))))
+  val exp1 : Exp[Int] = Mul(Var("z"), Add(Val(30), Mul(Var("x"), Var("y"))))
   
-  implicit val env : Env = Map("x" -> 17, "y" -> 10, "z" -> 2)
+  implicit val env : Env[Int] = Map("x" -> 17, "y" -> 10, "z" -> 2)
   val eval1 = eval(exp1)
-
   println(s"Eval exp gives $eval1")
+
+  implicit val env2 : Env[String] = Map("x" -> "aaaa", "y" -> "bbbb")
+  val exp2: Exp[String] = Mul(Var("x"), Var("y"))
+  val eval2 = eval(exp2)
+
+  println(s"Eval exp gives $eval2")
 }

@@ -7,14 +7,13 @@ object Scala2Numeric {
     object ops {
 
       implicit class NumericOps[T](a: T)(implicit n: Numeric[T]) {
-        def Add(b: T): T = n.Add(a, b)
-        
+        def add(b: T): T = n.add(a, b)
 
-        def +(b: T): T = n.Add(a, b)
+        def +(b: T): T = n.add(a, b)
 
-        def Mul(b: T): T = n.Mul(a, b)
+        def mul(b: T): T = n.mul(a, b)
 
-        def *(b: T): T = n.Mul(a, b)
+        def *(b: T): T = n.mul(a, b)
       }
 
     }
@@ -22,30 +21,30 @@ object Scala2Numeric {
   }
 
   trait Numeric[T] {
-    def Add(a: T, b: T): T
+    def add(a: T, b: T): T
 
-    def Mul(a: T, b: T): T
+    def mul(a: T, b: T): T
   }
 
   implicit val numericInt: Numeric[Int] = new Numeric[Int] {
 
-    def Add(a: Int, b: Int): Int = a + b
+    def add(a: Int, b: Int): Int = a + b
 
-    def Mul(a: Int, b: Int): Int = a * b
+    def mul(a: Int, b: Int): Int = a * b
   }
 
   implicit val numericLong: Numeric[Long] = new Numeric[Long] {
 
-    def Add(a: Long, b: Long): Long = a + b
+    def add(a: Long, b: Long): Long = a + b
 
-    def Mul(a: Long, b: Long): Long = a * b
+    def mul(a: Long, b: Long): Long = a * b
   }
 
   implicit val numericString: Numeric[String] = new Numeric[String] {
 
-    def Add(a: String, b: String): String = a ++ b
+    def add(a: String, b: String): String = a ++ b
 
-    def Mul(a: String, b: String): String = {
+    def mul(a: String, b: String): String = {
       for (as <- a;
            bs <- b;
            s <- as.toString ++ bs.toString) yield s
