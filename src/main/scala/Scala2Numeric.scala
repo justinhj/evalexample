@@ -24,6 +24,8 @@ object Scala2Numeric {
     def add(a: T, b: T): T
 
     def mul(a: T, b: T): T
+
+    def square(a: T): T = mul(a, a)
   }
 
   implicit val numericInt: Numeric[Int] = new Numeric[Int] {
@@ -38,6 +40,7 @@ object Scala2Numeric {
     def add(a: Long, b: Long): Long = a + b
 
     def mul(a: Long, b: Long): Long = a * b
+    
   }
 
   implicit val numericString: Numeric[String] = new Numeric[String] {
