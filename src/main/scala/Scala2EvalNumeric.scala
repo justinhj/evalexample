@@ -13,7 +13,7 @@ object Scala2EvalNumeric extends App {
 
   type Env[T] = Map[String, T]
 
-  def eval[T : Numeric](exp: Exp[T])(using env : Env[T]): T = {
+  def eval[T : Numeric](exp: Exp[T])(implicit env : Env[T]): T = {
     exp match {
       case Var(id) => handleVar(id)
       case Val(value) => value

@@ -1,8 +1,10 @@
-## Some Scala 3 things
+## Eval example
 
-This repo is a companion to a YouTube video (link to follow) and blog post (link to follow also).
+This repo contains code from the playlist and blog post series Functional Justin.
 
-The topic is the following four Scala 3 features which are demonstrated by porting a small Scala 2 program to Scala 3.
+https://www.youtube.com/watch?v=J01u_Dmrx5U&list=PL-G8WBFTPSVpCcFq6O7czfx9m9T21Cz24&index=1&ab_channel=FunctionalJustin
+
+The topic of the first video is the following four Scala 3 features which are demonstrated by porting a small Scala 2 program to Scala 3.
 
 1. Enums
 
@@ -28,3 +30,4 @@ The topic is the following four Scala 3 features which are demonstrated by porti
 - https://www.reddit.com/r/scala/comments/j9dz03/context_functions_in_dotty_vs_lambdas/
 - http://recurse.se/2019/09/implicit-functions-in-scala-3/
 
+Also here you'll find the Numeric type class implemented in Scala 2 and Scala 3

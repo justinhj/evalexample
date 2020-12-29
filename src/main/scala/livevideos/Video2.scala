@@ -1,15 +1,19 @@
 package livevideos
 
+import scala.math.{Numeric => _}
+
 // Coded during video about type classes in Scala2
 object Video2 extends App {
-
+  
   object Scala2Numeric {
 
+    object Numeric {
+      def apply[T](implicit numeric: Numeric[T]): Numeric[T] = numeric
+    }
+    
     trait Numeric[T] {
       def add(a: T, b: T): T
-
       def mul(a: T, b: T): T
-
       def square(a: T): T = mul(a, a)
     }
 
@@ -17,11 +21,9 @@ object Video2 extends App {
 
       implicit class NumericOps[T](a: T)(implicit numeric: Numeric[T]) {
         def add(b: T): T = numeric.add(a, b)
-
         def mul(b: T): T = numeric.mul(a, b)
 
         def +(b: T): T = add(b)
-
         def *(b: T): T = mul(b)
       }
 
@@ -48,8 +50,8 @@ object Video2 extends App {
   import Scala2Numeric._
   import Scala2Numeric.ops._
 
-  def sumList[T](ts: List[T])(implicit numeric: Numeric[T]): T = {
-    ts.reduce((a, b) => a + b)
+  def sumList[T : Numeric](ts: List[T]): T = {
+    ts.reduce((a, b) => Numeric[T].add(a,b))
   }
 
   {
@@ -64,5 +66,13 @@ object Video2 extends App {
     val s2 = "efgh"
     val product = s1 * s2
     println(s"product $product")
+  }
+  
+  {
+    val aPlusB = Numeric[Int].add(3,4)
+    val aPlusB2 = 10.add(20)
+    val aPlusB3 = "apple" * "blueberry"
+    
+    println(s"aPlusB $aPlusB aPlusB2 $aPlusB2 aPlusB3 $aPlusB3")
   }
 }

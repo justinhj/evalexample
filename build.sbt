@@ -1,12 +1,13 @@
-val dottyVersion = "0.27.0-RC1"
-
 lazy val root = project
   .in(file("."))
   .settings(
-    name := "dotty-simple",
+    name := "eval-example",
     version := "0.1.0",
 
-    scalaVersion := dottyVersion,
+    scalaVersion := "3.0.0-M3",
+    useScala3doc := true,
 
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
-  )
+    libraryDependencies ++= Seq(
+      "com.novocode" % "junit-interface" % "0.11" % "test"
+    ))
+

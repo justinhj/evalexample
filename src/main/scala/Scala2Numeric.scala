@@ -19,7 +19,7 @@ object Scala2Numeric {
     }
 
   }
-
+  
   trait Numeric[T] {
     def add(a: T, b: T): T
 

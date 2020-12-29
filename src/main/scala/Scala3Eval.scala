@@ -28,7 +28,7 @@ object Scala3Eval extends App:
   
   // Provide an environment and eval the expression
   {
-    given envMap as Env = Map("x" -> 7, "y" -> 6, "z" -> 22)
+    given envMap: Env = Map("x" -> 7, "y" -> 6, "z" -> 22)
 
     val eval1 = eval(exp1)
 
@@ -37,7 +37,7 @@ object Scala3Eval extends App:
 
   // And again with a different environment
   {
-    given envMap as Env = Map("x" -> 17, "y" -> 10, "z" -> 2)
+    given envMap: Env = Map("x" -> 17, "y" -> 10, "z" -> 2)
 
     val eval1 = eval(exp1)
 
