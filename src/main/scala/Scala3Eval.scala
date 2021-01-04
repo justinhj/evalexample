@@ -22,9 +22,9 @@ object Scala3Eval extends App:
   def handleAdd(l: Exp, r: Exp): WithEnv = eval(l) + eval(r)
   
   def handleVar(s: String): WithEnv =
-    summonEnv.getOrElse(s, 0)
+    summonEnv.get(s).get
 
-  val exp1 : Exp = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
+  val exp1 : Exp = Add(Var("z"), Add(Val(10), Add(Var("xx"), Var("y"))))
   
   // Provide an environment and eval the expression
   {
