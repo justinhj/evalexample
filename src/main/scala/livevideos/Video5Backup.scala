@@ -70,7 +70,7 @@ object Video5Backup extends App {
   // and motivate the Monad
 
   def lookup(symbolName: String): Either[String,Int] = {
-    val symbolTable = Map("x" -> 1, "y" -> 2)
+    val symbolTable = Map("Xabcd" -> 1, "Yabcd" -> 2)
     symbolTable.get(symbolName) match {
       case Some(value) => Right(value)
       case None => Left(s"Symbol not found $symbolName")
@@ -123,4 +123,28 @@ object Video5Backup extends App {
   val lookupS4 = symbol2.fflatMap(lookup)
   println(s"lookupS4 is $lookupS4")
 
+  // Sequencing two functions
+  def validateSymbol(symbolName: String): Either[String, String] = {
+    if(symbolName.size == 0) Left("Symbol is empty")
+    else {
+      if(symbolName(0).isUpper == false) Left("Symbol must start with an uppercase letter")
+      else {
+        val rest = symbolName.substring(1).toList
+        if(rest.forall(_.isLower)) Right(symbolName)
+        else Left("Trailing characters must be lowercase")
+      }
+    }
+  }
+
+  // Validate then lookup
+  val symbol3 = summon[Monad[[X] =>> Either[String,X]]].pure("Xabcd")
+
+  val what1 = symbol3.fflatMap(s => validateSymbol(s)).fflatMap(lookup)
+  println(s"what1 is $what1")
+
+  // Same again with an invalid symbol
+  val symbol4 = summon[Monad[[X] =>> Either[String,X]]].pure("abcd")
+
+  val what2 = symbol4.fflatMap(s => validateSymbol(s)).fflatMap(lookup)
+  println(s"what2 is $what2")
 }
