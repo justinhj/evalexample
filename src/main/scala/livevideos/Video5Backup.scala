@@ -98,7 +98,6 @@ object Video5Backup extends App {
   end Monad
 
   // Implementation of Monad for Either
-
   given eitherMonad[Err]: Monad[[X] =>> Either[Err,X]] with {
     def pure[A](a: A): Either[Err, A] = Right(a)
     extension [A,B](x: Either[Err,A]) def fflatMap(f: A => Either[Err, B]) = {

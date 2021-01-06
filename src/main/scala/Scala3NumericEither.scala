@@ -1,4 +1,4 @@
-import org.justinhj.typeclasses._
+import org.justinhj.typeclasses.{given, _}
 
 object Scala3EvalEither extends App:
 
@@ -6,12 +6,29 @@ object Scala3EvalEither extends App:
     case InvalidSymboName
     case SymbolNotFound
 
-  type EvalResult[A <: Numeric[A]] = Either[EvalError, A]
+  type EvalResult[A] = Either[EvalError, A]
 
-//  given evalResultNumeric[A: Numeric]: Numeric[EvalResult[A]] with {
-//    def add[A](a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = ??? 
-//    def mul[A](a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = ???
-//  }
+  // Implement Numeric for EvalResult
+  given evalResultNumeric[A: Numeric]: Numeric[Either[EvalError, A]] with {
+    def add(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
+      a.fflatMap {
+        aa => 
+          b.map {
+            bb =>
+              aa + bb
+          }
+      }
+    }
+    def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
+      a.fflatMap {
+        aa => 
+          b.map {
+            bb =>
+              aa * bb
+          }
+      }
+    }
+  }
 
   enum Exp[A]:
     case Val(value: A) extends Exp[A]
@@ -22,20 +39,23 @@ object Scala3EvalEither extends App:
   
   import Exp._
   
-  type WithEnv[A] = Env[A] ?=> A
+  type WithEnv[A] = Env[A] ?=> Either[EvalError, A]
 
   def summonEnv[A] : Env[A] ?=> Env[A] = summon[Env[A]]
   
-  def eval[A](exp: Exp[A]): WithEnv[A] =
+  def eval[A : Numeric](exp: Exp[A]): WithEnv[A] =
     exp match
       case Var(id) => handleVar(id)
-      case Val(value) => value
+      case Val(value) => Right(value)
       case Add(l,r) => handleAdd(l,r)
 
-  def handleAdd[A](l: Exp[A] , r: Exp[A] ): WithEnv[A] = ??? // eval(l) + eval(r)
+  def handleAdd[A : Numeric](l: Exp[A] , r: Exp[A] ): WithEnv[A] = eval(l) + eval(r)
   
   def handleVar[A](s: String): WithEnv[A] =
-    summonEnv(s)
+    summonEnv.get(s) match {
+      case Some(value) => Right(value)
+      case None => Left(EvalError.SymbolNotFound)
+    }
 
   val exp1 : Exp[Int] = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
   
@@ -48,9 +68,9 @@ object Scala3EvalEither extends App:
     println(s"Eval exp gives $eval1")
   }
 
-  // And again with a different environment
+  // And again with a different environment and a missing symbol
   {
-    given envMap: Env[Int] = Map("x" -> 17, "y" -> 10, "z" -> 2)
+    given envMap: Env[Int] = Map("x" -> 17, "y" -> 10, "a" -> 2)
 
     val eval1 = eval(exp1)
 
