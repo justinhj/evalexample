@@ -147,4 +147,17 @@ object Video5Backup extends App {
 
   val what2 = symbol4.fflatMap(s => validateSymbol(s)).fflatMap(lookup)
   println(s"what2 is $what2")
+
+  // Nicer syntax for pure
+
+  object Monad:
+    def apply[F[_]](using m: Monad[F]) = m
+
+  val m = Monad[[X] =>> Either[String, X]]  
+
+  val symbol5 = Monad[[X] =>> Either[String,X]].pure("Yabcd")
+
+  // type MyEither[A] = [E] =>> Either[E,A]
+
+  //  val symbol6: Either[String, String] = Monad[EEither].pure("Yabcd")
 }
