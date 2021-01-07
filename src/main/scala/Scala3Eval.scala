@@ -11,7 +11,7 @@ object Scala3Eval extends App:
   import Exp._
   
   type WithEnv = Env ?=> Int
-  
+
   def eval(exp: Exp): WithEnv =
     exp match
       case Var(id) => handleVar(id)
@@ -26,11 +26,11 @@ object Scala3Eval extends App:
     summon[Env].get(s).get
 
   val exp1 : Exp = Add(
-      Var("z"), 
+      Var("z"),
       Add(
-        Val(10), 
+        Val(10),
         Mul(
-          Var("x"), 
+          Var("x"),
           Var("y"))))
   
   // Provide an environment and eval the expression
