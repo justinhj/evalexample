@@ -1,4 +1,5 @@
-import org.justinhj.typeclasses.{given, _}
+import org.justinhj.typeclasses.applicative.{given, _}
+import org.justinhj.typeclasses.numeric.{given, _}
 
 object Scala3EvalEither extends App:
 
@@ -11,22 +12,29 @@ object Scala3EvalEither extends App:
   // Implement Numeric for EvalResult
   given evalResultNumeric[A: Numeric]: Numeric[Either[EvalError, A]] with {
     def add(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      a.fflatMap {
-        aa => 
-          b.map {
-            bb =>
-              aa + bb
-          }
-      }
+      
+      a.map2(b)((a,b) => a + b)
+      
+//      
+//      a.fflatMap {
+//        aa => 
+//          b.map {
+//            bb =>
+//              aa + bb
+//          }
+//      }
     }
     def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      a.fflatMap {
-        aa => 
-          b.map {
-            bb =>
-              aa * bb
-          }
-      }
+      
+      a.map2(b)((a,b) => a * b)
+      
+//      a.fflatMap {
+//        aa => 
+//          b.map {
+//            bb =>
+//              aa * bb
+//          }
+//      }
     }
   }
 

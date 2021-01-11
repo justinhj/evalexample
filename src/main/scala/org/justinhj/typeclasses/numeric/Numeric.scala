@@ -1,6 +1,6 @@
-package org.justinhj.typeclasses
+package org.justinhj.typeclasses.numeric
 
-  // Extension methods allow one to add methods to a type after the type is defined
+// Extension methods allow one to add methods to a type after the type is defined
   // Which is the essence of type classes!
 
   // Numeric type class in Scala 3
@@ -36,9 +36,3 @@ package org.justinhj.typeclasses
     }
   }
 
-//  val val1 = summon[Numeric[Int]].add(10, 20)
-//  println(s"10 + 20 = $val1")
-//
-//  val val2 = "ab" * "cd"
-//  println(s"ab * cd = $val2")
-//}
