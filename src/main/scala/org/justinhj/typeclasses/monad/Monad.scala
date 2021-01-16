@@ -1,11 +1,12 @@
 package org.justinhj.typeclasses.monad
 
+import org.justinhj.typeclasses.applicative.Applicative
 import org.justinhj.typeclasses.functor.Functor
 
 object Monad:
   def apply[F[_]](using m: Monad[F]) = m
 
-trait Monad[F[_]] extends Functor[F]:
+trait Monad[F[_]] extends Applicative[F]:
 
  // The unit value for a monad
  def pure[A](x:A):F[A]
@@ -14,10 +15,16 @@ trait Monad[F[_]] extends Functor[F]:
    // The fundamental composition operation
    def fflatMap(f :A=>F[B]):F[B]
    
-   // The `map` operation can now be defined in terms of `flatMap`
-   def fmap(f:A=>B)=fa.fflatMap {
-     a =>
-       pure(f(a))
+   // Monad can also implement `ap` in terms of `map` and `flatMap`
+   def ap(fab: F[A => B]): F[B] = {
+     fab.fflatMap {
+       f =>
+         fa.fflatMap {
+           a => 
+             pure(f(a))
+         }
+     }
+     
    }
 
 end Monad

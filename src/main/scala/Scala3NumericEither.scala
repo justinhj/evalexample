@@ -11,10 +11,19 @@ object Scala3EvalEither extends App:
 
   // Implement Numeric for EvalResult
   given evalResultNumeric[A: Numeric]: Numeric[Either[EvalError, A]] with {
+
+    def sub(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
+      a.map2(b)(_ - _)
+    }
+    
+    def div(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
+      a.map2(b)(_ / _)
+    }
+
     def add(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      
+
       a.map2(b)((a,b) => a + b)
-      
+
 //      
 //      a.fflatMap {
 //        aa => 
@@ -25,9 +34,9 @@ object Scala3EvalEither extends App:
 //      }
     }
     def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      
+
       a.map2(b)((a,b) => a * b)
-      
+
 //      a.fflatMap {
 //        aa => 
 //          b.map {
@@ -41,6 +50,9 @@ object Scala3EvalEither extends App:
   enum Exp[A]:
     case Val(value: A) extends Exp[A]
     case Add(left: Exp[A], right: Exp[A]) extends Exp[A]
+    case Sub(left: Exp[A], right: Exp[A]) extends Exp[A]
+    case Mul(left: Exp[A], right: Exp[A]) extends Exp[A]
+    case Div(left: Exp[A], right: Exp[A]) extends Exp[A]
     case Var(identifier: String) extends Exp[A]
   
   type Env[A] = Map[String, A]
@@ -56,9 +68,15 @@ object Scala3EvalEither extends App:
       case Var(id) => handleVar(id)
       case Val(value) => Right(value)
       case Add(l,r) => handleAdd(l,r)
+      case Sub(l,r) => handleSub(l,r)
+      case Div(l,r) => handleDiv(l,r)
+      case Mul(l,r) => handleMul(l,r)
 
   def handleAdd[A : Numeric](l: Exp[A] , r: Exp[A] ): WithEnv[A] = eval(l) + eval(r)
-  
+  def handleSub[A : Numeric](l: Exp[A] , r: Exp[A] ): WithEnv[A] = eval(l) - eval(r)
+  def handleMul[A : Numeric](l: Exp[A] , r: Exp[A] ): WithEnv[A] = eval(l) * eval(r)
+  def handleDiv[A : Numeric](l: Exp[A] , r: Exp[A] ): WithEnv[A] = eval(l) / eval(r)
+
   def handleVar[A](s: String): WithEnv[A] =
     summonEnv.get(s) match {
       case Some(value) => Right(value)
@@ -83,4 +101,34 @@ object Scala3EvalEither extends App:
     val eval1 = eval(exp1)
 
     println(s"Eval exp gives $eval1")
+  }
+
+  {
+    // Test some operations
+    given envMap: Env[Int] = Map("x" -> 1, "y" -> 10, "z" -> 100)
+    val expO1 = Mul(Val(10), Var("y"))
+    assert(eval(expO1) == Right(100))
+
+    val expO2 = Div(Val(1000), Var("z"))
+    assert(eval(expO2) == Right(10))
+
+    val expO3 = Sub(Val(1000), Mul(Var("y"), Var("z")))
+    assert(eval(expO3) == Right(0))
+  }
+
+  {
+    // Division by zero
+//    given envMap: Env[Int] = Map.empty
+//    val expO1 = Div(Val(10), Val(0))
+//    assert(eval(expO1) == Right(0))
+  }
+  
+  // And again with a non-numeric number type (it has no instance of our Numeric)
+  {
+//    given envMap: Env[Double] = Map("x" -> 17, "y" -> 10, "a" -> 2)
+//    val expD : Exp[Double] = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
+//
+//    val eval1 = eval(expD)
+//
+//    println(s"Eval exp gives $eval1")
   }

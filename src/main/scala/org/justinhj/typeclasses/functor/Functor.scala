@@ -1,5 +1,8 @@
 package org.justinhj.typeclasses.functor
 
+object Functor:
+  def apply[F[_]](using f: Functor[F]) = f
+
 trait Functor[F[_]]:
   extension [A, B](x: F[A])
     def fmap(f: A => B): F[B]

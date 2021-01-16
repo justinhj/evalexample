@@ -2,6 +2,9 @@ package org.justinhj.typeclasses.applicative
 
 import org.justinhj.typeclasses.functor.Functor
 
+object Applicative:
+  def apply[F[_]](using a: Applicative[F]) = a
+
 trait Applicative[F[_]] extends Functor[F]:
   
   def pure[A](x:A):F[A]
