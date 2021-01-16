@@ -6,6 +6,7 @@ object Scala3EvalEither extends App:
   enum EvalError:
     case InvalidSymboName
     case SymbolNotFound
+    case DivisionByZero
 
   type EvalResult[A] = Either[EvalError, A]
 
@@ -16,8 +17,18 @@ object Scala3EvalEither extends App:
       a.map2(b)(_ - _)
     }
     
+    def isZero(ea: EvalResult[A]): Boolean = {
+      ea match {
+        case Right(a) if summon[Numeric[A]].isZero(a) => true
+        case l => false
+      }
+    }
+    
     def div(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      a.map2(b)(_ / _)
+      if isZero(b) then
+        Left(EvalError.DivisionByZero) 
+      else  
+        a.map2(b)((a,b) => a / b)
     }
 
     def add(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
@@ -118,9 +129,9 @@ object Scala3EvalEither extends App:
 
   {
     // Division by zero
-//    given envMap: Env[Int] = Map.empty
-//    val expO1 = Div(Val(10), Val(0))
-//    assert(eval(expO1) == Right(0))
+    given envMap: Env[Int] = Map.empty
+    val expO1 = Div(Val(10), Val(Numeric[Int].zero))
+    assert(eval(expO1) == Left(EvalError.DivisionByZero))
   }
   
   // And again with a non-numeric number type (it has no instance of our Numeric)

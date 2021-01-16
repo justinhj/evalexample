@@ -1,7 +1,7 @@
 package org.justinhj.typeclasses.numeric
 
 // Extension methods allow one to add methods to a type after the type is defined
-  // Which is the essence of type classes!
+// Which is the essence of type classes!
 
   // Numeric type class in Scala 3
   trait Numeric[T] {
@@ -9,6 +9,8 @@ package org.justinhj.typeclasses.numeric
     def mul(a: T, b: T): T
     def div(a: T, b: T): T
     def sub(a: T, b: T): T
+    
+    def isZero(a: T) : Boolean
     
     extension (a: T) {
       def +(b: T): T = add(a, b)
@@ -27,6 +29,8 @@ package org.justinhj.typeclasses.numeric
 
     def mul(a: Int, b: Int): Int = a * b
     def div(a: Int, b: Int): Int = a / b
+    
+    def isZero(a: Int) = a == 0
   }
 
   given Numeric[String] with {
@@ -51,5 +55,7 @@ package org.justinhj.typeclasses.numeric
         s <- as.toString ++ bs.toString
       ) yield s
     }
+
+    def isZero(a: String) = a == ""
   }
 
