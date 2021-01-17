@@ -4,16 +4,17 @@ import org.justinhj.typeclasses.functor.{given, _}
 
 object Video6 extends App {
 
-  val l1 = List(1,2,3)
-  
-  val functorIdentityLawList = l1.fmap(identity) == l1
-  println(s"functorIdentityLawList == $functorIdentityLawList")
+  // Identity law for functors...
+  val l1 = List(1, 2, 3)
+  println(l1 == l1.fmap(a => identity(a)))
+
+  val e1: Either[String, Int] = Right(10)
+  println(e1 == e1.fmap(identity))
 
   def f(a: Int): Int = a + 1
-  def g(a: Int): Int = a - 1
-  
-  val functorCompositionLawList = l1.fmap(f).fmap(g) == l1.fmap(a => g(f(a)))
-  println(s"functorCompositionLawList == $functorCompositionLawList")
 
-  
+  def g(a: Int): Int = a - 1
+
+  println(e1.fmap(f).fmap(g) == e1.fmap(a => g(f(a))))
+  println(l1.fmap(f).fmap(g) == l1.fmap(a => g(f(a))))
 }

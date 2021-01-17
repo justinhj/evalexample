@@ -6,21 +6,37 @@ object Scala3EvalEither extends App:
   enum EvalError:
     case InvalidSymboName
     case SymbolNotFound
+    case DivisionByZero
 
   type EvalResult[A] = Either[EvalError, A]
 
   // Implement Numeric for EvalResult
   given evalResultNumeric[A: Numeric]: Numeric[Either[EvalError, A]] with {
 
-    def sub(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      a.map2(b)(_ - _)
+    def isZero(a: EvalResult[A]): Boolean = {
+      a match {
+        case Right(a) if summon[Numeric[A]].isZero(a) => true
+        case _ => false
+      }
+    }
+    
+    def add(fa: EvalResult[A], fb: EvalResult[A]): EvalResult[A] = {
+      fa.map2(fb)((a,b) => a + b)
     }
     
     def div(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      a.map2(b)(_ / _)
+      if isZero(b) then
+        Left(EvalError.DivisionByZero)
+      else 
+        a.map2(b)(_ / _)
     }
 
-    def add(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
+    def sub(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
+
+      a.map2(b)((a, b) => a - b)
+    }
+    
+    def add2(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
 
       a.map2(b)((a,b) => a + b)
 
@@ -118,17 +134,7 @@ object Scala3EvalEither extends App:
 
   {
     // Division by zero
-//    given envMap: Env[Int] = Map.empty
-//    val expO1 = Div(Val(10), Val(0))
-//    assert(eval(expO1) == Right(0))
-  }
-  
-  // And again with a non-numeric number type (it has no instance of our Numeric)
-  {
-//    given envMap: Env[Double] = Map("x" -> 17, "y" -> 10, "a" -> 2)
-//    val expD : Exp[Double] = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
-//
-//    val eval1 = eval(expD)
-//
-//    println(s"Eval exp gives $eval1")
+    given envMap: Env[Int] = Map.empty
+    val expO1 = Div(Val(10), Val(0))
+    assert(eval(expO1) == Left(EvalError.DivisionByZero))
   }

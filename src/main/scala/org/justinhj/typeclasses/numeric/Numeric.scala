@@ -9,6 +9,7 @@ package org.justinhj.typeclasses.numeric
     def mul(a: T, b: T): T
     def div(a: T, b: T): T
     def sub(a: T, b: T): T
+    def isZero(a: T): Boolean 
     
     extension (a: T) {
       def +(b: T): T = add(a, b)
@@ -27,6 +28,8 @@ package org.justinhj.typeclasses.numeric
 
     def mul(a: Int, b: Int): Int = a * b
     def div(a: Int, b: Int): Int = a / b
+    
+    def isZero(a: Int) = a == 0
   }
 
   given Numeric[String] with {
@@ -51,5 +54,7 @@ package org.justinhj.typeclasses.numeric
         s <- as.toString ++ bs.toString
       ) yield s
     }
+    
+    def isZero(a: String) = a.size == 0
   }
 

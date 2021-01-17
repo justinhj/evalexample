@@ -21,8 +21,8 @@ object Video6Backup extends App {
   
   val l1 = List(1,2,3)
 
-  def f(a: Int): Int = if (a % 2) == 0 then a + 1 else a
-  def g(a: Int): Int = a // a - 1
+  def f(a: Int): Int = a + 1 
+  def g(a: Int): Int = a - 1
 
   val functorIdentityLawList = l1.fmap(identity) == l1
   println(s"functorIdentityLawList is $functorIdentityLawList ${l1.fmap(identity)}")
