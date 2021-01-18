@@ -35,6 +35,18 @@ given eitherApplicative[Err]: Applicative[[X] =>> Either[Err,X]] with {
   }
 }
 
+given optionApplicative: Applicative[Option] with {
+  def pure[A](a: A): Option[A] = Option(a)
+  
+  extension[A,B](fa: Option[A])
+    def ap(ff: Option[A => B]): Option[B] = {
+      (fa,ff) match {
+        case (Some(a), Some(f)) => Some(f(a))
+        case _ => None  
+      }
+    }
+}
+
 given listApplicative: Applicative[List] with {
   def pure[A](a: A): List[A] = List(a)
 
