@@ -36,19 +36,6 @@ object Scala3EvalEither extends App:
       a.map2(b)((a, b) => a - b)
     }
     
-    def add2(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-
-      a.map2(b)((a,b) => a + b)
-
-//      
-//      a.fflatMap {
-//        aa => 
-//          b.map {
-//            bb =>
-//              aa + bb
-//          }
-//      }
-    }
     def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
 
       a.map2(b)((a,b) => a * b)
