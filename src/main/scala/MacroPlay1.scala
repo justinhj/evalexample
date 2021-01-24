@@ -31,17 +31,17 @@ object MacroPlay1 extends App:
   val s1 = Macros.sum_m(Array(1,2,3,4))
   println(s1)
 
-  import org.justinhj.typeclasses.applicative.{given,_}
-  
-  def map3[F[_] : Applicative,A,B,C,D](fa: F[A], fb: F[B], fc: F[C])(f: (A,B,C) => D): F[D] = {
-    val app = Applicative[F]
-    val ff = app.pure((a:A) => (b:B) => (c:C) => f(a,b,c))
-    fc.ap(fb.ap(fa.ap(ff)))
-  } 
-
-  // Using map3 
-  val s2 = map3(Option(10), Option(20), Option(30))((a,b,c) => a + b + c)
-  println(s2)
+//  import org.justinhj.typeclasses.applicative.{given,_}
+//  
+//  def map3[F[_] : Applicative,A,B,C,D](fa: F[A], fb: F[B], fc: F[C])(f: (A,B,C) => D): F[D] = {
+//    val app = Applicative[F]
+//    val ff = app.pure((a:A) => (b:B) => (c:C) => f(a,b,c))
+//    fc.ap(fb.ap(fa.ap(ff)))
+//  } 
+//
+//  // Using map3 
+//  val s2 = map3(Option(10), Option(20), Option(30))((a,b,c) => a + b + c)
+//  println(s2)
 
 
 
