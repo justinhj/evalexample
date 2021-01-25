@@ -3,7 +3,27 @@ object MapNMacro {
   import scala.quoted._
   import org.justinhj.typeclasses.applicative.{_}
 
+  def takeFImpl[F[_] : Applicative, A](fa: Expr[F[A]])(using Quotes, Type[F], Type[A]): Expr[Tuple2[F[A],F[A]]] = '{
+    ///Expr(${Tuple2(fa, fa)})
+    ???
+  }
 
+  inline def takeF[F[_]: Applicative, A](inline fa: F[A]): (F[A], F[A]) = ${takeFImpl('fa)}
+
+
+  import scala.quoted._
+
+  // Note this causes a compiler crash when uncommented
+  def takeOptionImpl[T](o: Expr[Option[T]], default: Expr[T])(using Quotes, Type[T]): Expr[T] = '{
+//   $o match {
+//     case Some(t1) => t1
+//     case None: Option[T] => $default
+//   }
+   $default
+  }
+  
+  inline def takeOption[T](inline o: Option[T], inline default: T) = ${takeOptionImpl('o, 'default)}
+  
 //  def sequence[T <: Tuple](t: T): Option[Tuple.InverseMap[T, Option]] = {
 //    val unwrapped = t.productIterator.collect {case Some(s) => s}.toArray[Any]
 //    if(unwrapped.length == t.productArity)
@@ -12,7 +32,7 @@ object MapNMacro {
 //      None
 //  }
   
-  def productMImpl(fs: Expr[Seq[Int]])(using Quotes): Expr[Int] = {
+  def tastySumImpl(fs: Expr[Seq[Int]])(using Quotes): Expr[Int] = {
     import quotes.reflect._
     val tree: Term = fs.asTerm
     tree match {
@@ -47,8 +67,8 @@ object MapNMacro {
   
   // Macro to take a sequence of of F[_] and return a F[Tuple] of the results
   // requires an applicative in scope for F
-  inline def productM(inline fs: Int*): Int = 
-    ${productMImpl('fs)}
+  inline def tastySum(inline fs: Int*): Int = 
+    ${tastySumImpl('fs)}
   
 //  def mapNMacro[F[_]: Applicative](efs: Expr[Seq[F[_]]])(using Type[F], Quotes): Expr[F[Seq[_]]] = '{
 //    val app = summon[Applicative[F]]
