@@ -39,7 +39,9 @@ object TestMapNMacro extends App {
 
   // Mapn test
   // println(s"productM test ${MapNMacro.productM(5, 10, 20, 20, 30.0)}") // Double require int
-  println(s"productM test ${MapNMacro.productM(500, 9220981, 198201982, 10, 20, 20, 30)}")
+  println(s"productM test ${MapNMacro.productM(500, 9220981, 1982282, 10, 20, 20, 30)}")
   println(s"productM test ${MapNMacro.productM()}")
-  
+  println(s"productM test ${MapNMacro.productM(1,2,3)}")
+
+
 }

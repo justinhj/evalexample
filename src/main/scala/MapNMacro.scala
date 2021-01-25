@@ -16,26 +16,15 @@ object MapNMacro {
     import quotes.reflect._
     val tree: Term = fs.asTerm
     tree match {
-      case Inlined(None, Nil, Typed(expr, tpt)) =>
-        expr match {
-          case Repeated(args, _) =>
-          
-            //report.error("victory " + what)
-            val what: Int = args.collect{
-              case Literal(IntConstant(n)) =>
-                n
-            }.sum
-            '{${Expr(what)}}
-          case expr =>
-            report.error("poop " + expr.show(using Printer.TreeStructure))
-            '{1}
-        }
-      
+      case Inlined(None, Nil, Typed(Repeated(args, _), _)) =>
+          val what: Int = args.collect{
+            case Literal(IntConstant(n)) =>
+              n
+          }.sum
+          Expr(what)
       case expr =>
-        //println(Printer.TreeStructure.show(tree))
-        report.error(tree.show(using Printer.TreeStructure))
-        //report.error("Parameter must be a known constant")
-        '{4}
+        report.error("Didn't get what I wanted " + expr.show(using Printer.TreeStructure))
+        '{0}
     }
   }
 
