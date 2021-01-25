@@ -37,4 +37,9 @@ object TestMapNMacro extends App {
   println(s"p2 ${productn(Option(10), Option("Nero"))}")
   println(s"p2 ${productn(Option(10), Option("Nero"), Option(2.0))}")
 
+  // Mapn test
+  // println(s"productM test ${MapNMacro.productM(5, 10, 20, 20, 30.0)}") // Double require int
+  println(s"productM test ${MapNMacro.productM(500, 9220981, 198201982, 10, 20, 20, 30)}")
+  println(s"productM test ${MapNMacro.productM()}")
+  
 }

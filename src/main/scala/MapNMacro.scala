@@ -2,11 +2,64 @@ object MapNMacro {
 
   import scala.quoted._
   import org.justinhj.typeclasses.applicative.{_}
-  
-  
-//  inline def product_m[F[_]: Applicative](fs: Seq[F[Any]]): F[Tuple] = {
-//    
+
+
+//  def sequence[T <: Tuple](t: T): Option[Tuple.InverseMap[T, Option]] = {
+//    val unwrapped = t.productIterator.collect {case Some(s) => s}.toArray[Any]
+//    if(unwrapped.length == t.productArity)
+//      Some(Tuple.fromArray(unwrapped).asInstanceOf[Tuple.InverseMap[T, Option]])
+//    else
+//      None
 //  }
+  
+  def productMImpl(fs: Expr[Seq[Int]])(using Quotes): Expr[Int] = {
+    import quotes.reflect._
+    val tree: Term = fs.asTerm
+    tree match {
+      case Inlined(None, Nil, Typed(expr, tpt)) =>
+        expr match {
+          case Repeated(args, _) =>
+          
+            //report.error("victory " + what)
+            val what: Int = args.collect{
+              case Literal(IntConstant(n)) =>
+                n
+            }.sum
+            '{${Expr(what)}}
+          case expr =>
+            report.error("poop " + expr.show(using Printer.TreeStructure))
+            '{1}
+        }
+      
+      case expr =>
+        //println(Printer.TreeStructure.show(tree))
+        report.error(tree.show(using Printer.TreeStructure))
+        //report.error("Parameter must be a known constant")
+        '{4}
+    }
+  }
+
+/*
+  Inlined(None, Nil, 
+    Typed(
+      Repeated(
+        List(
+          Literal(IntConstant(10)), 
+          Literal(IntConstant(20)), 
+          Literal(IntConstant(30))
+          ), Inferred()), 
+        Inferred()))
+ */
+  
+  
+  
+//  println(s"productM test ${MapNMacro.productM(10, 20, 30)}")
+
+  
+  // Macro to take a sequence of of F[_] and return a F[Tuple] of the results
+  // requires an applicative in scope for F
+  inline def productM(inline fs: Int*): Int = 
+    ${productMImpl('fs)}
   
 //  def mapNMacro[F[_]: Applicative](efs: Expr[Seq[F[_]]])(using Type[F], Quotes): Expr[F[Seq[_]]] = '{
 //    val app = summon[Applicative[F]]
