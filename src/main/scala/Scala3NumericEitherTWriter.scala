@@ -33,18 +33,21 @@ object Scala3EvalEitherTWriter extends App {
 
   type EString[A] = Either[String,A]
 
-  def incrementEven(a: Int): WriterT[EString,String,Int] = {
+  def incrementEven(a: Int): WriterT[EString,List[String],Int] = {
     if(a % 2 == 1) WriterT(Left("Odd number provided"))
-    else WriterT(Right(("Inc even", a + 1)))
+    else WriterT(Right((List("Inc even"), a + 1)))
   }
 
-  def doubleOdd(a: Int): WriterT[EString, String, Int] = {
+  def doubleOdd(a: Int): WriterT[EString, List[String], Int] = {
     if(a % 2 == 0) WriterT(Left("Even number provided"))
-    else WriterT(Right(("Double odd", a + a)))
+    else WriterT(Right((List("Double odd"), a + a)))
   }
 
-   val butts: WriterT[EString, String, Int] = incrementEven(8)
-   val ass = summon[Monad[[X] =>> WriterT[EString, String, X]]].fflatMap(butts)(doubleOdd)
+  // Pure
+  
+ // val pureWriterT = Monad[[A] =>> WriterT[EString, List[String], A]].pure(10)
+   val butts: WriterT[EString,  List[String], Int] = incrementEven(8)
+   val ass = summon[Monad[[X] =>> WriterT[EString,  List[String], X]]].fflatMap(butts)(doubleOdd)
 
 //  val ptest = Monad[WriterT[Option,String,Int]].pure(22)
 //  val butts: WriterT[[A] =>> Either[String, A], String, Int] = incrementEven(10)

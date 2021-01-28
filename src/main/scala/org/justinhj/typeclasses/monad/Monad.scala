@@ -3,6 +3,7 @@ package org.justinhj.typeclasses.monad
 import org.justinhj.typeclasses.applicative.Applicative
 import org.justinhj.typeclasses.functor.Functor
 import org.justinhj.datatypes._
+import org.justinhj.typeclasses.monoid.{given, _}
 
 object Monad:
   def apply[F[_]](using m: Monad[F]) = m
@@ -61,19 +62,6 @@ given listMonad: Monad[List] with
         case Nil => Nil
       }
     }
-
-  // TODO this needs its own place in datatypes
-  trait Monoid[A]:
-    def zero: A
-    def combine(al: A, ar: A): A
-
-  object Monoid {
-    def apply[A](using m: Monoid[A]) = m
-  }
-
-  given stringMonoid: Monoid[String] with
-    def zero = ""
-    def combine(al:String, ar:String) = al + ar
 
   given writerTMonad[F[_]: Monad,W: Monoid]: Monad[[X] =>> WriterT[F,W,X]] with {
 
