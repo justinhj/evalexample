@@ -1,7 +1,59 @@
 import org.justinhj.typeclasses.monad.{given, _}
 import org.justinhj.typeclasses.numeric.{given, _}
+import org.justinhj.datatypes.WriterT
 
-object Scala3EvalEither extends App:
+object Scala3EvalEitherTWriter extends App {
+
+  // Monad transformers are data structures that wrap an underlying value and provide
+  // an effect
+  //
+  // Motivating example is we want to use Numeric[Either[EvalError,A]] as well as
+  // add a log of our computation
+  //
+  // The effect of logging is captured with a Writer and to use Writer with our Either
+  // we use the WriterT monad transformer
+  //
+  // source 7.4 in FP for mortals
+  //
+  // If we have some effect F[A] we can lift it to a transformer with liftM
+  // def liftM[T[_[_],_], F[_]: Monad, A](fa: F[A]): T[F,A]
+  //
+  // and Hoist (advanced) for a natural transformation
+  //
+  // transformers generally implement convenient constructors on their companion
+  // to make them easier to use
+
+  // implement the Writer monad transformer
+
+  // as an aside we need monoid, coming soon!
+
+//  case class WriterT[F[_]: Monad,W,A](val wrapped: F[(W,A)])
+
+  // Let's combine Writer with Either
+
+  type EString[A] = Either[String,A]
+
+  def incrementEven(a: Int): WriterT[EString,String,Int] = {
+    if(a % 2 == 1) WriterT(Left("Odd number provided"))
+    else WriterT(Right(("Inc even", a + 1)))
+  }
+
+  def doubleOdd(a: Int): WriterT[EString, String, Int] = {
+    if(a % 2 == 0) WriterT(Left("Even number provided"))
+    else WriterT(Right(("Double odd", a + a)))
+  }
+
+   val butts: WriterT[EString, String, Int] = incrementEven(8)
+   val ass = summon[Monad[[X] =>> WriterT[EString, String, X]]].fflatMap(butts)(doubleOdd)
+
+//  val ptest = Monad[WriterT[Option,String,Int]].pure(22)
+//  val butts: WriterT[[A] =>> Either[String, A], String, Int] = incrementEven(10)
+//  val ass = butts.fflatMap(doubleOdd)
+
+  println(ass)
+
+  //val t1: WriterT[Option, String, Int] = incrementEven(2).fflatMap(a => doubleOdd(a))
+
 
   enum EvalError:
     case InvalidSymboName
@@ -36,18 +88,8 @@ object Scala3EvalEither extends App:
       a.map2(b)((a, b) => a - b)
     }
 
-    def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      // Note this could also use map2 but I use flatMap to demonstrate
-      // how much extra work you have to do compared to using applicative's
-      // map2 method...
-      a.flatMap {
-        aa =>
-          b.map {
-            bb =>
-              aa * bb
-          }
-      }
-    }
+    def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] =
+      a.map2(b)((a,b) => a * b)
   }
 
   enum Exp[A]:
@@ -125,3 +167,4 @@ object Scala3EvalEither extends App:
     val expO1 = Div(Val(10), Val(0))
     assert(eval(expO1) == Left(EvalError.DivisionByZero))
   }
+}
