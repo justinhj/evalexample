@@ -1,25 +1,5 @@
 object WriterTest extends App {
-
-  trait Semigroup[A]:
-    def combine(al: A, ar: A): A
-
-  object Semigroup:
-    def apply[A](using s: Semigroup[A]) = s
-
-  trait Monoid[A] extends Semigroup[A]:
-    def zero: A
-
-  object Monoid:
-    def apply[A](using m: Monoid[A]) = m
-
-  given stringMonoid: Monoid[String] with
-    def zero = ""
-    def combine(al:String, ar:String) = al + ar
-
-  given listMonoid[A]: Monoid[List[A]] with
-    def zero = List.empty[A]
-    def combine(al:List[A], ar:List[A]) = al ++ ar
-
+  
   object Functor:
     def apply[F[_]](using f: Functor[F]) = f
 
@@ -106,42 +86,71 @@ object WriterTest extends App {
         }
       }
 
-  case class WriterT[F[_]: Monad,W,A](val wrapped: F[(W,A)])
+  case class Transformer[F[_]: Monad,A](val wrapped: F[A])
   
-  given writerTMonad[F[_]: Monad,W: Monoid]: Monad[[X] =>> WriterT[F,W,X]] with {
+  given transformerMonad[F[_]: Monad]: Monad[[X] =>> Transformer[F,X]] with {
 
-    def pure[A](a: A): WriterT[F,W,A] = WriterT(summon[Monad[F]].pure((Monoid[W].zero,a)))
+    def pure[A](a: A): Transformer[F,A] = Transformer(summon[Monad[F]].pure(a))
 
-    extension [A,B](fa: WriterT[F,W,A]) 
-      def flatMap(f: A => WriterT[F,W,B]) = {
-        val ffa: F[(W,B)] = Monad[F].flatMap(fa.wrapped) {
-          case (wa,a) => {
+    extension [A,B](fa: Transformer[F,A]) 
+      def flatMap(f: A => Transformer[F,B]) = {
+        val ffa: F[B] = Monad[F].flatMap(fa.wrapped) {
+          case a => {
             f(a).wrapped.map {
-              case (wb, b) =>
-                (Monoid[W].combine(wa,wb), b)
+              case b =>
+                b
             }
           }
         }
-        WriterT(ffa)
+        Transformer(ffa)
       }
   }
-
-
+  
   type EString[A] = Either[String,A]
 
-  def incrementEven(a: Int): WriterT[EString,List[String],Int] = {
-    if(a % 2 == 1) WriterT(Left("Odd number provided"))
-    else WriterT(Right((List("Inc even"), a + 1)))
+  def incrementEven(a: Int): Transformer[EString,Int] = {
+    if(a % 2 == 1) Transformer(Left("Odd number provided"))
+    else Transformer(Right(a + 1))
   }
 
-  def doubleOdd(a: Int): WriterT[EString, List[String], Int] = {
-    if(a % 2 == 0) WriterT(Left("Even number provided"))
-    else WriterT(Right((List("Double odd"), a + a)))
+  def doubleOdd(a: Int): Transformer[EString, Int] = {
+    if(a % 2 == 0) Transformer(Left("Even number provided"))
+    else Transformer(Right(a * 2))
   }
   
   val writerExample = incrementEven(8)
-  val example = writerExample.flatMap(doubleOdd) // Error ambiguous F
+  
+  val m = Monad[[A] =>> Transformer[EString, A]]
+
+  val p1: Transformer[EString,Int]  = Monad[[A] =>> Transformer[EString, A]].pure(10)
+  
+  //Monad[[A] =>> Transformer[EString, A]].flatmap(p1)(doubleOdd)
+
+  //WriterTest.transformerMonad[Monad[[A] =>> Transformer[EString, A]]]
+
+  val a1: Transformer[EString,Int] = WriterTest.transformerMonad[EString].pure(10)
+  println(a1)
+
+  val a2 = WriterTest.transformerMonad[EString].flatMap(a1)(incrementEven)
+  println(a2)
+
+//  import WriterTest.{given,_}
+//  
+//  println(a2.flatMap(doubleOdd))
+  
+  
+  //  val example = writerExample.flatMap(doubleOdd) // Error ambiguous F
 //  
 //  println(example)
 
+  /*
+  /Users/justinhj/evalexample/src/main/scala/WriterTest.scala:123:31
+value flatMap is not a member of WriterTest.Transformer[WriterTest.EString, Int].
+An extension method was tried, but could not be fully constructed:
+
+    WriterTest.transformerMonad[F](
+      /* ambiguous: both method eitherMonad in object WriterTest and object optionMonad in object WriterTest match type WriterTest.Monad[F] */
+        summon[WriterTest.Monad[F]]
+    ).flatMap()
+   */
 }
