@@ -63,19 +63,19 @@ given listMonad: Monad[List] with
       }
     }
 
-  given writerTMonad[F[_]: Monad,W: Monoid]: Monad[[X] =>> WriterT[F,W,X]] with {
+given writerTMonad[F[_]: Monad,W: Monoid]: Monad[[X] =>> WriterT[F,W,X]] with {
 
-     def pure[A](a: A): WriterT[F,W,A] = WriterT(summon[Monad[F]].pure((Monoid[W].zero,a)))
+  def pure[A](a: A): WriterT[F,W,A] = WriterT(summon[Monad[F]].pure((Monoid[W].zero,a)))
 
-     extension [A,B](fa: WriterT[F,W,A]) def fflatMap(f: A => WriterT[F,W,B]) = {
-       val ffa: F[(W,B)] = Monad[F].fflatMap(fa.wrapped) {
-         case (wa,a) => {
-           f(a).wrapped.fmap {
-             case (wb, b) =>
-               (Monoid[W].combine(wa,wb), b)
-           }
+  extension [A,B](fa: WriterT[F,W,A]) def fflatMap(f: A => WriterT[F,W,B]) = {
+     val ffa: F[(W,B)] = Monad[F].fflatMap(fa.wrapped) {
+       case (wa,a) => {
+         f(a).wrapped.fmap {
+           case (wb, b) =>
+             (Monoid[W].combine(wa,wb), b)
          }
        }
-       WriterT(ffa)
      }
+     WriterT(ffa)
+   }
   }

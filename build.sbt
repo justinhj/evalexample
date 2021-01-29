@@ -7,6 +7,12 @@ lazy val root = project
     scalaVersion := "3.0.0-M3",
     useScala3doc := true,
 
+    scalacOptions ++= Seq(
+        "-print-tasty",
+        "-explain",
+        "-explain-types"
+    ),
+    
     libraryDependencies ++= Seq(
       "com.novocode" % "junit-interface" % "0.11" % "test"
     ))

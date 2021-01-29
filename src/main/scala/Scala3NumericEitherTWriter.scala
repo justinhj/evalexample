@@ -1,6 +1,7 @@
-import org.justinhj.typeclasses.monad.{given, _}
-import org.justinhj.typeclasses.numeric.{given, _}
+import org.justinhj.typeclasses.monad.{given,_}
+import org.justinhj.typeclasses.numeric.{given,_}
 import org.justinhj.datatypes.WriterT
+import org.justinhj.typeclasses.monoid.{given,_}
 
 object Scala3EvalEitherTWriter extends App {
 
@@ -42,21 +43,29 @@ object Scala3EvalEitherTWriter extends App {
     if(a % 2 == 0) WriterT(Left("Even number provided"))
     else WriterT(Right((List("Double odd"), a + a)))
   }
-
-  // Pure
   
- // val pureWriterT = Monad[[A] =>> WriterT[EString, List[String], A]].pure(10)
-   val butts: WriterT[EString,  List[String], Int] = incrementEven(8)
-   val ass = summon[Monad[[X] =>> WriterT[EString,  List[String], X]]].fflatMap(butts)(doubleOdd)
+  val m1 = summon[Monad[List]]
+  
+  val writerExample = incrementEven(8)
+  //val m = summon[Monad[WriterT[EString, List[String],?]]]
+  //val m = summon[Monad[WriterT[Option, List[String],?]]]
 
-//  val ptest = Monad[WriterT[Option,String,Int]].pure(22)
-//  val butts: WriterT[[A] =>> Either[String, A], String, Int] = incrementEven(10)
-//  val ass = butts.fflatMap(doubleOdd)
-
-  println(ass)
-
-  //val t1: WriterT[Option, String, Int] = incrementEven(2).fflatMap(a => doubleOdd(a))
-
+  def flatMap[F[_],W,A,B](fa: WriterT[F,W,A])(f: A => WriterT[F,W,B])
+                         (using mf: Monad[F], mw: Monoid[W]): WriterT[F,W,B] = {
+    val ffa: F[(W,B)] = mf.fflatMap(fa.wrapped) {
+      case (wa,a) => {
+        f(a).wrapped.fmap {
+          case (wb, b) =>
+            (mw.combine(wa,wb), b)
+        }
+      }
+    }
+    WriterT(ffa)
+  }
+  
+  val example = flatMap(writerExample)(doubleOdd)
+  
+  println(example)
 
   enum EvalError:
     case InvalidSymboName
