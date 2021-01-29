@@ -52,9 +52,9 @@ object Scala3EvalEitherTWriter extends App {
 
   def flatMap[F[_],W,A,B](fa: WriterT[F,W,A])(f: A => WriterT[F,W,B])
                          (using mf: Monad[F], mw: Monoid[W]): WriterT[F,W,B] = {
-    val ffa: F[(W,B)] = mf.fflatMap(fa.wrapped) {
+    val ffa: F[(W,B)] = mf.flatMap(fa.wrapped) {
       case (wa,a) => {
-        f(a).wrapped.fmap {
+        f(a).wrapped.map {
           case (wb, b) =>
             (mw.combine(wa,wb), b)
         }

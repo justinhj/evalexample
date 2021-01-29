@@ -12,12 +12,12 @@ trait Applicative[F[_]] extends Functor[F]:
   extension [A,B](x: F[A]) 
     def ap(f: F[A => B]): F[B]
 
-    def fmap(f: A => B): F[B] = {
+    def map(f: A => B): F[B] = {
       x.ap(pure(f))
     }
     
   extension [A,B,C](fa: F[A]) def map2(fb: F[B])(f: (A,B) => C): F[C] = {
-    val fab: F[B => C] = fa.fmap((a: A) => (b: B) => f(a,b))
+    val fab: F[B => C] = fa.map((a: A) => (b: B) => f(a,b))
     fb.ap(fab)
   }
 
@@ -53,7 +53,7 @@ given listApplicative: Applicative[List] with {
   extension[A,B](as: List[A])
     def ap(fs: List[A => B]): List[B] = {
       fs match {
-        case f :: tl => as.fmap(f) ++ as.ap(tl)
+        case f :: tl => as.map(f) ++ as.ap(tl)
         case Nil => Nil
       }
     }

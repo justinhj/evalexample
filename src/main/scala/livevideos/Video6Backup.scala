@@ -24,12 +24,12 @@ object Video6Backup extends App {
   def f(a: Int): Int = a + 1 
   def g(a: Int): Int = a - 1
 
-  val functorIdentityLawList = l1.fmap(identity) == l1
-  println(s"functorIdentityLawList is $functorIdentityLawList ${l1.fmap(identity)}")
+  val functorIdentityLawList = l1.map(identity) == l1
+  println(s"functorIdentityLawList is $functorIdentityLawList ${l1.map(identity)}")
   
   val e1: Either[String, Integer] = Right(10)
   
-  val functorIdentityLawEither = e1.fmap(identity) == e1
+  val functorIdentityLawEither = e1.map(identity) == e1
   println(s"functorIdentityLawEither is $functorIdentityLawEither")
 
   // 2. Preserve composition morphisms
