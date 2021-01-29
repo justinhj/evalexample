@@ -8,7 +8,7 @@ lazy val root = project
     useScala3doc := true,
 
     scalacOptions ++= Seq(
-        "-print-tasty",
+        //"-print-tasty",
         "-explain",
         "-explain-types"
     ),

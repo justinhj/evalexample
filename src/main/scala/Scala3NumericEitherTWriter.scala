@@ -50,22 +50,24 @@ object Scala3EvalEitherTWriter extends App {
   //val m = summon[Monad[WriterT[EString, List[String],?]]]
   //val m = summon[Monad[WriterT[Option, List[String],?]]]
 
-  def flatMap[F[_],W,A,B](fa: WriterT[F,W,A])(f: A => WriterT[F,W,B])
-                         (using mf: Monad[F], mw: Monoid[W]): WriterT[F,W,B] = {
-    val ffa: F[(W,B)] = mf.flatMap(fa.wrapped) {
-      case (wa,a) => {
-        f(a).wrapped.map {
-          case (wb, b) =>
-            (mw.combine(wa,wb), b)
-        }
-      }
-    }
-    WriterT(ffa)
-  }
-  
-  val example = flatMap(writerExample)(doubleOdd)
-  
-  println(example)
+  // This works ... 
+//  def flatMap[F[_],W,A,B](fa: WriterT[F,W,A])(f: A => WriterT[F,W,B])
+//                         (using mf: Monad[F], mw: Monoid[W]): WriterT[F,W,B] = {
+//    val ffa: F[(W,B)] = mf.flatMap(fa.wrapped) {
+//      case (wa,a) => {
+//        f(a).wrapped.map {
+//          case (wb, b) =>
+//            (mw.combine(wa,wb), b)
+//        }
+//      }
+//    }
+//    WriterT(ffa)
+//  }
+//  
+  //val example = flatMap(writerExample)(doubleOdd)
+  //val example = writerExample.flatMap(doubleOdd)
+
+  //println(example)
 
   enum EvalError:
     case InvalidSymboName
