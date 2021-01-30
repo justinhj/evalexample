@@ -9,8 +9,8 @@ lazy val root = project
 
     scalacOptions ++= Seq(
         //"-print-tasty",
-        "-explain",
-        "-explain-types"
+        /* "-explain", */
+        /* "-explain-types" */
     ),
     
     libraryDependencies ++= Seq(
