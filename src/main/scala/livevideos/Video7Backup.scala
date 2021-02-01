@@ -1,9 +1,9 @@
 object Video7Backup extends App:
 
-  // 1. Monads in Category theory 
-  // Diagram?
+  // Introduction slides and video camera. Monads in Category theory 
+  // Diagram
   // Monads are just flatMap and map and unit
-  // But why?
+  // But why
   // Functions map to category theory so we have identity and associative functions
   // Monads are also a category. Where kleisli arrows are functions 
   // identity is unit and compose is associativity
@@ -38,22 +38,16 @@ object Video7Backup extends App:
     }
 
   // 4. Sample usage
+  def f(n: Int): Option[Int] = if n == 4 then None else Option(n)
+  def g(n: Int): Option[Boolean] = if n % 2 == 1 then Option(true) else Option(false)
+  def h(b: Boolean): Option[String] = if b then Some("Winner!") else None
   
-  def validateSymbol(symbol: String): Option[String] = 
-    val regex = "[A-Z]+[a-z]*".r
-    if regex.matches(symbol) then Some(symbol) else None
+  val fcomposed = Monad1[Option].compose(f, g)
 
-  def lookupSymbol(symbol: String): Option[Int] =
-    val symbolTable: Map[String, Int] = Map("Alpha" -> 10, "Beta" -> 20)
-    symbolTable.get(symbol)
-
-  val x = optionMonad1.compose(validateSymbol, lookupSymbol)
-
-  println(x("a"))
-  println(x("alpha"))
-  println(x("Alpha"))
-  println(x("Beta"))
-  println(x("Betamax"))
+  println(fcomposed(1))
+  println(fcomposed(2))
+  println(fcomposed(3))
+  println(fcomposed(4))
 
   // 5. Monad laws
   // Remember with the category of Scala functions we had to have an identity morphism and function morphisms
@@ -63,28 +57,21 @@ object Video7Backup extends App:
 
   // left identity
   println(
-    m1.compose(validateSymbol, m1.unit)("alpha") == validateSymbol("alpha"))
-  println(
-    m1.compose(validateSymbol, m1.unit)("Alpha") == validateSymbol("Alpha"))
+    m1.compose(f, m1.unit)(1) == f(1))
 
   // right identity
   println(
-    validateSymbol("alpha") == m1.compose(validateSymbol, m1.unit)("alpha"))
-  println(
-    validateSymbol("Alpha") == m1.compose(validateSymbol, m1.unit)("Alpha"))
+    f(1) == m1.compose(f, m1.unit)(1))
 
   // associativity
-
-  def double(n: Int): Option[Int] =
-    Some(n + n)
  
   println(
     m1.compose(
-      m1.compose(validateSymbol, lookupSymbol), double)("Beta"))
+      m1.compose(f, g), h)(1))
 
   println(
     m1.compose(
-      validateSymbol, m1.compose(lookupSymbol, double))("Beta"))
+      f, m1.compose(g, h))(1))
 
   // 6. flatMap with compose?
   
@@ -93,7 +80,7 @@ object Video7Backup extends App:
   }
 
   println(
-    flatMap(validateSymbol("Beta"))(lookupSymbol))
+    flatMap(f(1))(g))
 
   // 7. Conclusion since flatmap can be implemented with compose you can see that unit and flatMap is indeed a Monad
 
