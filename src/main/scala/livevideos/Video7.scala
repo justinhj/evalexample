@@ -68,7 +68,7 @@ object Video7 extends App:
         fb.flatMap(rf) 
     }
 
-    val c1 = compose(f,g)(1)
-    println(s"compose $c1")
+    val c2 = compose(f,g)(1)
+    println(s"compose $c2")
   }
 

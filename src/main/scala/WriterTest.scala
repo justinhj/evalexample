@@ -122,35 +122,9 @@ object WriterTest extends App {
   
   val m = Monad[[A] =>> Transformer[EString, A]]
 
-  val p1: Transformer[EString,Int]  = Monad[[A] =>> Transformer[EString, A]].pure(10)
-  
-  //Monad[[A] =>> Transformer[EString, A]].flatmap(p1)(doubleOdd)
-
-  //WriterTest.transformerMonad[Monad[[A] =>> Transformer[EString, A]]]
-
   val a1: Transformer[EString,Int] = WriterTest.transformerMonad[EString].pure(10)
   println(a1)
 
-  val a2 = WriterTest.transformerMonad[EString].flatMap(a1)(incrementEven)
+  val a2 = WriterTest.transformerMonad[EString].flatMap(incrementEven(10))(doubleOdd)
   println(a2)
-
-//  import WriterTest.{given,_}
-//  
-//  println(a2.flatMap(doubleOdd))
-  
-  
-  //  val example = writerExample.flatMap(doubleOdd) // Error ambiguous F
-//  
-//  println(example)
-
-  /*
-  /Users/justinhj/evalexample/src/main/scala/WriterTest.scala:123:31
-value flatMap is not a member of WriterTest.Transformer[WriterTest.EString, Int].
-An extension method was tried, but could not be fully constructed:
-
-    WriterTest.transformerMonad[F](
-      /* ambiguous: both method eitherMonad in object WriterTest and object optionMonad in object WriterTest match type WriterTest.Monad[F] */
-        summon[WriterTest.Monad[F]]
-    ).flatMap()
-   */
 }
