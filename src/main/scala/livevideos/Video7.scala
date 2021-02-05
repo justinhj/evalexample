@@ -12,12 +12,7 @@ object Video7 extends App:
     def compose[A,B,C](lf: A => Option[B], rf: B => Option[C]): A => Option[C] = {
       a => 
         lf(a) match {
-          case Some(b) =>
-            rf(b) match {
-              case Some(c) =>
-                Option(c)
-              case None => None
-            }
+          case Some(b) => rf(b)
           case None => None          
         } 
     }
