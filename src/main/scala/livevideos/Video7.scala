@@ -30,6 +30,8 @@ object Video7 extends App:
   val fcomposed = Monad1[Option].compose(f,g)
   val fghComposed = Monad1[Option].compose(fcomposed, h)
   
+  def i(a: Float) = 0.0
+
   println(fghComposed(1))
   println(fghComposed(2))
   println(fghComposed(3))
