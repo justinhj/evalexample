@@ -59,11 +59,8 @@ object Video7 extends App:
   {
     import org.justinhj.typeclasses.monad.{given,_}
 
-    def compose[F[_],A,B,C](lf: A => F[B], rf: B => F[C])(using m: Monad[F]): A => F[C] = {
-      a =>
-        val fb = m.pure(a).flatMap(lf)
-        fb.flatMap(rf) 
-    }
+    def compose[F[_],A,B,C](lf: A => F[B], rf: B => F[C])(using m: Monad[F]): A => F[C] = 
+      a => lf(a).flatMap(rf)
 
     val c2 = compose(f,g)(1)
     println(s"compose $c2")
