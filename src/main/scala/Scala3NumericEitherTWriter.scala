@@ -46,28 +46,14 @@ object Scala3EvalEitherTWriter extends App {
   
   val m1 = summon[Monad[List]]
   
-  val writerExample = incrementEven(8)
-  //val m = summon[Monad[WriterT[EString, List[String],?]]]
-  //val m = summon[Monad[WriterT[Option, List[String],?]]]
+  val yay = incrementEven(8).flatMap(doubleOdd)
+  println(s"yay? $yay") 
 
-  // This works ... 
-//  def flatMap[F[_],W,A,B](fa: WriterT[F,W,A])(f: A => WriterT[F,W,B])
-//                         (using mf: Monad[F], mw: Monoid[W]): WriterT[F,W,B] = {
-//    val ffa: F[(W,B)] = mf.flatMap(fa.wrapped) {
-//      case (wa,a) => {
-//        f(a).wrapped.map {
-//          case (wb, b) =>
-//            (mw.combine(wa,wb), b)
-//        }
-//      }
-//    }
-//    WriterT(ffa)
-//  }
-//  
-  //val example = flatMap(writerExample)(doubleOdd)
-  //val example = writerExample.flatMap(doubleOdd)
-
-  //println(example)
+  // val yayyay = for (
+  //   a <- incrementEven(10);
+  //   b <- doubleOdd(b)
+  // ) yield b
+  // println(yayyay)
 
   enum EvalError:
     case InvalidSymboName
