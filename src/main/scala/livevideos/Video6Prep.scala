@@ -1,6 +1,6 @@
 package livevideos
 
-object Video6Backup extends App {
+object Video6Prep extends App {
   
   import org.justinhj.typeclasses.functor.{_, given}
 

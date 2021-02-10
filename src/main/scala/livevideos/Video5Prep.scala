@@ -1,6 +1,6 @@
 package livevideos
 
-object Video5Backup extends App {
+object Video5Prep extends App {
 
   // Functors and error handling
   trait Functor[F[_]]:

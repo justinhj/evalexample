@@ -1,4 +1,4 @@
-object Video7Backup extends App:
+object Video7Prep extends App:
 
   // Introduction slides and video camera. Monads in Category theory 
   // Diagram
