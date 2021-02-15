@@ -82,4 +82,20 @@ object Video8Prep extends App {
 
   println(l1.ffold())
   println(l1.foldMap(MultInt.apply))
+  
+  // Nested monoids
+  
+  given mapMonoid[K,V: Monoid]: Monoid[Map[K,V]] with
+    val vm = summon[Monoid[V]]
+    def zero = Map.empty[K,V]
+    extension(l: Map[K,V]) def combine(r: Map[K,V]): Map[K,V] =
+      (l.keys ++ r.keys).foldLeft(Map.empty[K,V]) {
+        case (acc, k) =>
+          acc.updated(k, l.getOrElse(k,vm.zero).combine(r.getOrElse(k,vm.zero)))
+      }
+  
+  val m1: Map[String, MultInt] = Map("a" -> MultInt(30), "b" -> MultInt(20))
+  val m2: Map[String, MultInt] = Map("b" -> MultInt(3), "c" -> MultInt(90))
+
+  println(m1 |+| m2)
 }
