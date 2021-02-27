@@ -32,78 +32,85 @@ object Scala3EvalEitherTWriter extends App {
 
   // Let's combine Writer with Either
 
-  type EString[A] = Either[String,A]
-
-  def incrementEven(a: Int): WriterT[EString,List[String],Int] = {
-    if(a % 2 == 1) WriterT(Left("Odd number provided"))
-    else WriterT(Right((List("Inc even"), a + 1)))
-  }
-
-  def doubleOdd(a: Int): WriterT[EString, List[String], Int] = {
-    if(a % 2 == 0) WriterT(Left("Even number provided"))
-    else WriterT(Right((List("Double odd"), a + a)))
-  }
-  
-  val m1 = summon[Monad[List]]
-  
-  val writerExample = incrementEven(8)
-  //val m = summon[Monad[WriterT[EString, List[String],?]]]
-  //val m = summon[Monad[WriterT[Option, List[String],?]]]
-
-  // This works ... 
-//  def flatMap[F[_],W,A,B](fa: WriterT[F,W,A])(f: A => WriterT[F,W,B])
-//                         (using mf: Monad[F], mw: Monoid[W]): WriterT[F,W,B] = {
-//    val ffa: F[(W,B)] = mf.flatMap(fa.wrapped) {
-//      case (wa,a) => {
-//        f(a).wrapped.map {
-//          case (wb, b) =>
-//            (mw.combine(wa,wb), b)
-//        }
-//      }
-//    }
-//    WriterT(ffa)
-//  }
-//  
-  //val example = flatMap(writerExample)(doubleOdd)
-  //val example = writerExample.flatMap(doubleOdd)
-
-  //println(example)
-
   enum EvalError:
     case InvalidSymboName
     case SymbolNotFound
     case DivisionByZero
 
+  //type EvalResult[A] = WriterT[EString, List[String], A]
+
   type EvalResult[A] = Either[EvalError, A]
+  
+  type EvalResultW[A] = WriterT[[A1] =>> EvalResult[A1], List[String], A]
+  
+  type EString[A] = Either[String,A]
 
-  // Implement Numeric for EvalResult
-  given evalResultNumeric[A: Numeric]: Numeric[Either[EvalError, A]] with {
+  def incrementEven(a: Int): EvalResult[Int] = {
+    if(a % 2 == 1) Left(EvalError.SymbolNotFound)
+    else Right(a + 1)
+  }
 
-    def isZero(a: EvalResult[A]): Boolean = {
-      a match {
+  def doubleOdd(a: Int): EvalResult[Int] = {
+    if(a % 2 == 0) Left(EvalError.DivisionByZero)
+    else Right(a + a)
+  }
+  
+  val m1 = summon[Monad[[A] =>> WriterT[[A1] =>> EvalResult[A1], List[String], A]]]
+  
+  // All valid ways to get a pure value as a writerT
+  val pure8_2 = summon[Monad[[A] =>> WriterT[[A1] =>> EvalResult[A1], List[String], A]]].pure(8)
+  val pure8_3 = Monad[[A] =>> WriterT[[A1] =>> EvalResult[A1], List[String], A]].pure(8)
+  
+  val pure8 = m1.pure(8).tell(List("OK")).tell(List("Let's go!"))
+  println(pure8)
+
+  // Lift example
+  val liftedExample: WriterT[[A1] =>> EvalResult[A1], String, Int] = WriterT.lift(Right(8))
+  val addedLog = liftedExample.tell("Added a log!")
+  println("Just the log " + addedLog.written)
+
+  val liftedLeftExample: WriterT[[A1] =>> EvalResult[A1], String, Int] = WriterT.lift(Left(EvalError.SymbolNotFound))
+  println("Just the log " + liftedLeftExample.tell("Hello!").written)
+  
+  val example: WriterT[[A1] =>> EvalResult[A1], List[String], Int] =
+    WriterT.lift[[A1] =>> EvalResult[A1], List[String], Int](incrementEven(8)).
+      tellWith(a => List(s"Incremented to $a")).
+      flatMap{
+        a => 
+          WriterT.lift[[A1] =>> EvalResult[A1], List[String], Int](doubleOdd(a))
+      }.
+      tellWith(a => List(s"Doubled to $a"))
+  
+  println(s"example $example")
+
+  given evalResultWNumeric[A: Numeric]: Numeric[WriterT[[A1] =>> Either[EvalError, A1], List[String], A]] with
+  {
+
+    def isZero(fa: EvalResultW[A]): Boolean = {
+      fa.value match {
         case Right(a) if summon[Numeric[A]].isZero(a) => true
         case _ => false
       }
     }
 
-    def add(fa: EvalResult[A], fb: EvalResult[A]): EvalResult[A] = {
-      fa.map2(fb)((a,b) => a + b)
+    def add(fa: EvalResultW[A], fb: EvalResultW[A]): EvalResultW[A] = {
+      writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(fa)(fb)((a, b) => a + b).tellWith(a => List(s"add $a"))
     }
 
-    def div(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
+    def div(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
       if isZero(b) then
-        Left(EvalError.DivisionByZero)
+        WriterT.lift(Left(EvalError.DivisionByZero))
       else
-        a.map2(b)(_ / _)
+        writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(a)(b)(_ / _).tellWith(a => List(s"div $a"))
     }
 
-    def sub(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-
-      a.map2(b)((a, b) => a - b)
+    def sub(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
+      writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(a)(b)((a, b) => a - b).tellWith(a => List(s"sub to $a"))
     }
 
-    def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] =
-      a.map2(b)((a,b) => a * b)
+    def mul(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
+      writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(a)(b)((a, b) => a * b).tellWith(a => List(s"mul to $a"))
+    }
   }
 
   enum Exp[A]:
@@ -117,15 +124,14 @@ object Scala3EvalEitherTWriter extends App {
   type Env[A] = Map[String, A]
 
   import Exp._
-
-  type WithEnv[A] = Env[A] ?=> Either[EvalError, A]
+  type WithEnv[A] = Env[A] ?=> WriterT[[A1] =>> Either[EvalError, A1], List[String], A]
 
   def summonEnv[A] : Env[A] ?=> Env[A] = summon[Env[A]]
 
   def eval[A : Numeric](exp: Exp[A]): WithEnv[A] =
     exp match
       case Var(id) => handleVar(id)
-      case Val(value) => Right(value)
+      case Val(value) => WriterT.lift[[A1] =>> EvalResult[A1], List[String], A](Right(value)).tellWith(a => List(s"Val $a"))
       case Add(l,r) => handleAdd(l,r)
       case Sub(l,r) => handleSub(l,r)
       case Div(l,r) => handleDiv(l,r)
@@ -138,8 +144,8 @@ object Scala3EvalEitherTWriter extends App {
 
   def handleVar[A](s: String): WithEnv[A] =
     summonEnv.get(s) match {
-      case Some(value) => Right(value)
-      case None => Left(EvalError.SymbolNotFound)
+      case Some(value) => WriterT.lift(Right(value))
+      case None => WriterT.lift(Left(EvalError.SymbolNotFound))
     }
 
   val exp1 : Exp[Int] = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
@@ -165,20 +171,19 @@ object Scala3EvalEitherTWriter extends App {
   {
     // Test some operations
     given envMap: Env[Int] = Map("x" -> 1, "y" -> 10, "z" -> 100)
-    val expO1 = Mul(Val(10), Var("y"))
-    assert(eval(expO1) == Right(100))
-
-    val expO2 = Div(Val(1000), Var("z"))
-    assert(eval(expO2) == Right(10))
-
-    val expO3 = Sub(Val(1000), Mul(Var("y"), Var("z")))
-    assert(eval(expO3) == Right(0))
+    val expO1 = Mul(
+      Val(10), 
+      Add(
+        Val(25),
+        Var("y")))
+      
+    println(s"exp01 ${eval(expO1)}")
   }
 
   {
     // Division by zero
     given envMap: Env[Int] = Map.empty
     val expO1 = Div(Val(10), Val(0))
-    assert(eval(expO1) == Left(EvalError.DivisionByZero))
+    println(s"exp01 ${eval(expO1)}")
   }
 }

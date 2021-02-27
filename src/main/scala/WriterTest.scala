@@ -1,4 +1,6 @@
-object WriterTest extends App {
+object TransformerTest extends App {
+  
+  // A Monad wrapper...
   
   object Functor:
     def apply[F[_]](using f: Functor[F]) = f
@@ -40,7 +42,6 @@ object WriterTest extends App {
       // The fundamental composition operation
         def flatMap(f :A=>F[B]):F[B]
   
-        // Monad can also implement `ap` in terms of `map` and `flatMap`
         def ap(fab: F[A => B]): F[B] = {
           fab.flatMap {
             f =>
@@ -49,9 +50,7 @@ object WriterTest extends App {
                   pure(f(a))
               }
           }
-  
         }
-
   end Monad
 
   given eitherMonad[Err]: Monad[[X] =>> Either[Err,X]] with
@@ -118,13 +117,28 @@ object WriterTest extends App {
     else Transformer(Right(a * 2))
   }
   
-  val writerExample = incrementEven(8)
+  // Make an instance of the Transformer monad
+  val tm = summon[Monad[[A] =>> Transformer[EString, A]]]
   
-  val m = Monad[[A] =>> Transformer[EString, A]]
+  // Test pure and flatMaps over separate statements, this works...
+  val pure10: Transformer[EString, Int] = tm.pure(10)
+  val incremented10 = pure10.flatMap(incrementEven)
+  val doubled11 = incremented10.flatMap(doubleOdd)
+  println(doubled11)
+  
+  // Test flatmaps in sequence - here the type checker fails ...
+  //val sequencedFlatmaps: Transformer[EString, Int] = (pure10.flatMap(incrementEven)).flatMap(doubleOdd)
 
-  val a1: Transformer[EString,Int] = WriterTest.transformerMonad[EString].pure(10)
-  println(a1)
-
-  val a2 = WriterTest.transformerMonad[EString].flatMap(incrementEven(10))(doubleOdd)
-  println(a2)
+////  // Test in a for comprehension - here pure 10 doesn't type check...
+//  val testFor1: Transformer[EString, Int] = for (
+//      a <- pure10;
+//      b <- incrementEven(a);
+//      c <- doubleOdd(b)
+//    ) yield v
+//
+  // Test in a for comprehension - here increment even doesn't type check...
+//  val testFor2: Transformer[EString, Int] = for (
+//        b <- transformerMonad[EString].flatMap(pure10)(incrementEven);
+//        c <- doubleOdd(b)
+//      ) yield v
 }
