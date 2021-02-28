@@ -11,7 +11,7 @@ object WriterT:
     WriterT(F.map(fa)(a => (m.zero, a)))
 
 case class WriterT[F[_],W,A](val wrapped: F[(W,A)]):
-  // tell let's us write to the log with affecting the current computed value
+  // tell let's us write to the log without affecting the current computed value
   def tell(l1: W)(using m: Monoid[W], f: Functor[F]): WriterT[F,W,A] =
     WriterT(wrapped.map{
       (l2,a) =>

@@ -6,8 +6,18 @@ import org.justinhj.typeclasses.functor.{given,_}
 
 object Video9 extends App:
 
-  case class WriterT[F[_],W,A](wrapped: F[(W,A)])  
-
+  case class WriterT[F[_],W,A](wrapped: F[(W,A)]):
+    def tell(l1: W)(using m: Monoid[W], f: Functor[F]): WriterT[F,W,A] =
+      WriterT(wrapped.map{
+        (l2,a) =>
+          (m.combine(l2, l1), a)
+      })
+    def tellWith(faw: A => W)(using m: Monoid[W], f: Functor[F]): WriterT[F,W,A] =
+      WriterT(wrapped.map{
+        (l2,a) =>
+          (m.combine(l2, faw(a)), a)
+      })
+        
   object WriterT:
     def lift[F[_],W,A](fa: F[A])(using m: Monoid[W], f: Functor[F]): WriterT[F,W,A] =
       WriterT(f.map(fa)(a => (m.zero, a)))
@@ -43,16 +53,18 @@ object Video9 extends App:
   writerTransformerMonad2[[A1] =>> Either[String, A1],List[String]].
     flatMap(we1)(a => WriterT.lift(incrementEven(a)))
 
-  val p1 = Monad[[A2] =>> WriterT[[A1] =>> Either[String, A1],List[String], A2]].pure(10)
-  Monad[[A2] =>> WriterT[[A1] =>> Either[String, A1],List[String], A2]].flatMap(p1)(a => WriterT.lift(incrementEven(a)))
-  
-  def prog1(n: Int): WriterT[[A1] =>> Either[String, A1], List[String], Int] = for (
-    a <- WriterT.lift(incrementEven(n));
-    b <- WriterT.lift(doubleOdd(a))
-  ) yield b
+  type StringEither[A] = Either[String, A]
 
-  println(prog1(8))
+  type StringEitherWriter[A] = WriterT[StringEither, List[String],A]
   
+  val m = summon[Monad[StringEitherWriter]]
+  val p10 = m.pure(10).tellWith(a => List(s"Initialized to $a"))
+  println(s"p10 $p10")
+  
+  val incremented = m.flatMap(p10)(a => WriterT.lift(incrementEven(a))).tellWith(a => List(s"Incremented to $a"))
+  println(incremented)
+
+  //Monad[StringEitherWriter].pure(10).tellWith(a => List(s"Initialized to $a")).flatMap(a => WriterT.lift(incrementEven(a)))
   
   println("Test")
 
