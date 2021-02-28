@@ -127,7 +127,7 @@ object TransformerTest extends App {
   println(doubled11)
   
   // Test flatmaps in sequence - here the type checker fails ...
-  //val sequencedFlatmaps: Transformer[EString, Int] = pure10.flatMap(incrementEven).flatMap(doubleOdd)
+  // val sequencedFlatmaps: Transformer[EString, Int] = pure10.flatMap(incrementEven).flatMap(doubleOdd)
 
 ////  // Test in a for comprehension - here pure 10 doesn't type check...
 //  val testFor1: Transformer[EString, Int] = for (
@@ -135,7 +135,7 @@ object TransformerTest extends App {
 //      b <- incrementEven(a);
 //      c <- doubleOdd(b)
 //    ) yield v
-//
+
   // Test in a for comprehension - here increment even doesn't type check...
 //  val testFor2: Transformer[EString, Int] = for (
 //        b <- transformerMonad[EString].flatMap(pure10)(incrementEven);
