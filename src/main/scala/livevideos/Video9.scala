@@ -43,28 +43,37 @@ object Video9 extends App:
   
   // TODO add the tell and tellWith commands 
   // Use them to do a sequence of code 
-  
-  def incrementEven(n: Int): Either[String, Int] =
+
+  implicit final class WriterTOps[F[_]: Monad, W: Monoid, A](private val fa: WriterT[F,W,A]) {
+    def flatMap[B](f: A => WriterT[F,W,B]): WriterT[F,W,B] =
+      Monad[[A] =>> WriterT[F,W,A]].flatMap(fa)(a => f(a))
+
+    def map2[B,C](fb: WriterT[F,W,B])(f: (A,B) => C): WriterT[F,W,C] =
+      Monad[[A] =>> WriterT[F,W,A]].map2(fa)(fb)(f)
+  }
+
+  // Some types to save us 'typing'
+  type StringEither[A] = Either[String, A]
+  type StringEitherWriter[A] = WriterT[StringEither, List[String],A]
+
+  // Couple of example functions that use either for error handling
+  def incrementEven(n: Int): StringEither[Int] =
     if n % 2 == 0 then Right(n+1) else Left("Not an event number")
   
-  def doubleOdd(n: Int): Either[String, Int] =
+  def doubleOdd(n: Int): StringEither[Int] =
     if n % 2 == 1 then Right(n * 2) else Left("Not an odd number")
 
-  writerTransformerMonad2[[A1] =>> Either[String, A1],List[String]].
-    flatMap(we1)(a => WriterT.lift(incrementEven(a)))
-
-  type StringEither[A] = Either[String, A]
-
-  type StringEitherWriter[A] = WriterT[StringEither, List[String],A]
+  // insert here a program that uses the above without WriterT then transform to the following
   
-  val m = summon[Monad[StringEitherWriter]]
-  val p10 = m.pure(10).tellWith(a => List(s"Initialized to $a"))
-  println(s"p10 $p10")
+  val prog1 = for (
+    a <- Monad[StringEitherWriter].pure(10).
+      tellWith(a => List(s"Initialized to $a"));
+    b <- WriterT.lift[StringEither,List[String], Int](incrementEven(a)).
+      tellWith(b1 => List(s"Incremented $a to $b1"));
+    c <- WriterT.lift[StringEither,List[String], Int](doubleOdd(b))
+  ) yield c
   
-  val incremented = m.flatMap(p10)(a => WriterT.lift(incrementEven(a))).tellWith(a => List(s"Incremented to $a"))
-  println(incremented)
-
-  //Monad[StringEitherWriter].pure(10).tellWith(a => List(s"Initialized to $a")).flatMap(a => WriterT.lift(incrementEven(a)))
+  println(prog1)
   
   println("Test")
 

@@ -1,11 +1,13 @@
 object WriterTOldSchool extends App  {
 
+  // For reference this a Scala 2 type class way to do it 
+  
   //import org.justinhj.datatypes.WriterT
   import org.justinhj.typeclasses.monad.{given,_}
   import org.justinhj.typeclasses.monoid.{given,_}
 
   // Implement WriterT using Cats implementation of Monad and Monoids
-  
+
   case class WriterT[F[_]: Monad,W,A](val wrapped: F[(W,A)])
 
   implicit def writerTMonad[F[_]: Monad,W: Monoid]: Monad[[A] =>> WriterT[F,W,A]] = new Monad[[A] =>> WriterT[F,W,A]] {

@@ -109,7 +109,7 @@ object Scala3EvalEitherTWriter extends App {
     }
 
     def mul(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
-      writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(a)(b)((a, b) => a * b).tellWith(a => List(s"mul to $a"))
+      a.map2(b)((a, b) => a * b).tellWith(a => List(s"mul to $a"))
     }
   }
 
