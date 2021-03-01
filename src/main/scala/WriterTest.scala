@@ -125,20 +125,28 @@ object TransformerTest extends App {
   val incremented10 = pure10.flatMap(incrementEven)
   val doubled11 = incremented10.flatMap(doubleOdd)
   println(doubled11)
+
+  implicit final class TransformerOps[F[_]: Monad, A](private val fa: Transformer[F,A]) {
+    def flatMap[B](f: A => Transformer[F,B]): Transformer[F,B] =
+      Monad[[A] =>> Transformer[F,A]].flatMap(fa)(a => f(a))
+
+    def map[B](f: A => B): Transformer[F,B] =
+      Monad[[A] =>> Transformer[F,A]].map(fa)(a => f(a))
+  }
   
   // Test flatmaps in sequence - here the type checker fails ...
-  // val sequencedFlatmaps: Transformer[EString, Int] = pure10.flatMap(incrementEven).flatMap(doubleOdd)
+  val sequencedFlatmaps: Transformer[EString, Int] = pure10.flatMap(incrementEven).flatMap(doubleOdd)
 
-////  // Test in a for comprehension - here pure 10 doesn't type check...
-//  val testFor1: Transformer[EString, Int] = for (
-//      a <- pure10;
-//      b <- incrementEven(a);
-//      c <- doubleOdd(b)
-//    ) yield v
+  // Test in a for comprehension - here pure 10 doesn't type check...
+  val testFor1: Transformer[EString, Int] = for (
+      a <- pure10;
+      b <- incrementEven(a);
+      c <- doubleOdd(b)
+    ) yield c
 
-  // Test in a for comprehension - here increment even doesn't type check...
-//  val testFor2: Transformer[EString, Int] = for (
-//        b <- transformerMonad[EString].flatMap(pure10)(incrementEven);
-//        c <- doubleOdd(b)
-//      ) yield v
+   // Test in a for comprehension - here increment even doesn't type check...
+  val testFor2: Transformer[EString, Int] = for (
+        b <- transformerMonad[EString].flatMap(pure10)(incrementEven);
+        c <- doubleOdd(b)
+      ) yield c
 }
