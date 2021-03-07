@@ -61,7 +61,7 @@ object Scala3EvalEitherTWriter extends App {
         val c = fabc(a,b)
         val w = fabcw(a,b,c)
         val prev = m.combine(al,bl)
-        (m.combine(w,prev),c)
+        (m.combine(prev,w),c)
     }
     WriterT(r)
   }
@@ -139,12 +139,20 @@ object Scala3EvalEitherTWriter extends App {
           Var("x"), 
           Var("y"))))
 
+//  val exp1 : Exp[Int] = 
+//    Add(
+//        Add(
+//          Val(10),
+//          Var("x")), 
+//        Val(20))
+  
   // Provide an environment and eval the expression
   {
     given envMap: Env[Int] = Map("x" -> 7, "y" -> 6, "z" -> 22)
 
     val eval1 = eval(exp1)
 
+    println(eval1)
     eval1.written match {
       case Right(log) =>
         log.foreach(println)
