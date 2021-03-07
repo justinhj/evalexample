@@ -25,16 +25,6 @@ case class WriterT[F[_],W,A](val wrapped: F[(W,A)]):
       (l2,a) =>
         (m.combine(l2, faw(a)), a)
     })
-
-  // like tellWith but for two effects
-  // TODO this doesn't really work
-  // maybe map2Tell would be better to combine mapping and telling 
-  def tellWith2[B](fb: WriterT[F,W,B])(faw: (A,B) => W)(using m: Monoid[W], f: Applicative[F]): WriterT[F,W,A] =
-    WriterT(wrapped.map2(fb.wrapped){
-      case ((l2,a),(l3,b)) =>
-        val prev = m.combine(l2,l3) 
-        (m.combine(prev, faw(a,b)), a)
-    })
     
   // written is so you can grab the log
   def written(using f: Functor[F]): F[W] =

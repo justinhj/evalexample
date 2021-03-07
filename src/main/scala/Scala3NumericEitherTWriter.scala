@@ -5,40 +5,11 @@ import org.justinhj.typeclasses.monoid.{given,_}
 
 object Scala3EvalEitherTWriter extends App {
 
-  // Monad transformers are data structures that wrap an underlying value and provide
-  // an effect
-  //
-  // Motivating example is we want to use Numeric[Either[EvalError,A]] as well as
-  // add a log of our computation
-  //
-  // The effect of logging is captured with a Writer and to use Writer with our Either
-  // we use the WriterT monad transformer
-  //
-  // source 7.4 in FP for mortals
-  //
-  // If we have some effect F[A] we can lift it to a transformer with liftM
-  // def liftM[T[_[_],_], F[_]: Monad, A](fa: F[A]): T[F,A]
-  //
-  // and Hoist (advanced) for a natural transformation
-  //
-  // transformers generally implement convenient constructors on their companion
-  // to make them easier to use
-
-  // implement the Writer monad transformer
-
-  // as an aside we need monoid, coming soon!
-
-//  case class WriterT[F[_]: Monad,W,A](val wrapped: F[(W,A)])
-
-  // Let's combine Writer with Either
-
   enum EvalError:
     case InvalidSymboName
     case SymbolNotFound
     case DivisionByZero
-
-  //type EvalResult[A] = WriterT[EString, List[String], A]
-
+  
   type EvalResult[A] = Either[EvalError, A]
   
   type EvalResultW[A] = WriterT[[A1] =>> EvalResult[A1], List[String], A]
@@ -83,8 +54,19 @@ object Scala3EvalEitherTWriter extends App {
   
   println(s"example $example")
 
+  def mapTell2[A,B,C,F[_],W](fa: WriterT[F,W,A],fb: WriterT[F,W,B],fabc: (A,B) => C,fabcw: (A,B,C) => W)
+                            (using m: Monoid[W], f: Monad[F]): WriterT[F,W,C] = {
+    val r = fa.wrapped.map2(fb.wrapped){
+      case ((al,a),(bl,b)) =>
+        val c = fabc(a,b)
+        val w = fabcw(a,b,c)
+        val prev = m.combine(al,bl)
+        (m.combine(w,prev),c)
+    }
+    WriterT(r)
+  }
+
   given evalResultWNumeric[A: Numeric]: Numeric[WriterT[[A1] =>> Either[EvalError, A1], List[String], A]] with
-  {
 
     def isZero(fa: EvalResultW[A]): Boolean = {
       fa.value match {
@@ -94,24 +76,24 @@ object Scala3EvalEitherTWriter extends App {
     }
 
     def add(fa: EvalResultW[A], fb: EvalResultW[A]): EvalResultW[A] = {
-      writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(fa)(fb)((a, b) => a + b).tellWith(a => List(s"add $a"))
+      mapTell2(fa,fb,(a, b) => a + b,(a,b,c) => List(s"$c: added $a to $b"))
     }
 
     def div(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
       if isZero(b) then
         WriterT.lift(Left(EvalError.DivisionByZero))
       else
-        writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(a)(b)(_ / _).tellWith(a => List(s"div $a"))
+        mapTell2(a,b,(a, b) => a / b,(a,b,c) => List(s"$c: divided $a by $b"))
     }
 
     def sub(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
-      writerTMonad[[A1] =>> Either[EvalError, A1], List[String]].map2(a)(b)((a, b) => a - b).tellWith(a => List(s"sub to $a"))
+      mapTell2(a,b,(a, b) => a / b,(a,b,c) => List(s"$c: subtracted $a from $b"))
     }
 
     def mul(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
-      a.map2(b)((a, b) => a * b).tellWith(a => List(s"mul to $a"))
+      mapTell2(a,b,(a, b) => a * b,(a,b,c) => List(s"$c: multiplied $a by $b"))
     }
-  }
+  
 
   enum Exp[A]:
     case Val(value: A) extends Exp[A]
@@ -130,7 +112,7 @@ object Scala3EvalEitherTWriter extends App {
 
   def eval[A : Numeric](exp: Exp[A]): WithEnv[A] =
     exp match
-      case Var(id) => handleVar(id)
+      case Var(id) => handleVar(id).tellWith(a => List(s"Var $id $a"))
       case Val(value) => WriterT.lift[[A1] =>> EvalResult[A1], List[String], A](Right(value)).tellWith(a => List(s"Val $a"))
       case Add(l,r) => handleAdd(l,r)
       case Sub(l,r) => handleSub(l,r)
@@ -148,7 +130,14 @@ object Scala3EvalEitherTWriter extends App {
       case None => WriterT.lift(Left(EvalError.SymbolNotFound))
     }
 
-  val exp1 : Exp[Int] = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
+  val exp1 : Exp[Int] = 
+    Add(
+      Var("z"), 
+      Add(
+        Val(10), 
+        Add(
+          Var("x"), 
+          Var("y"))))
 
   // Provide an environment and eval the expression
   {
@@ -156,29 +145,14 @@ object Scala3EvalEitherTWriter extends App {
 
     val eval1 = eval(exp1)
 
-    println(s"Eval exp gives $eval1")
+    eval1.written match {
+      case Right(log) =>
+        log.foreach(println)
+      case Left(err) => ()
+    }
+    
   }
-
-  // And again with a different environment and a missing symbol
-  {
-    given envMap: Env[Int] = Map("x" -> 17, "y" -> 10, "a" -> 2)
-
-    val eval1 = eval(exp1)
-
-    println(s"Eval exp gives $eval1")
-  }
-
-  {
-    // Test some operations
-    given envMap: Env[Int] = Map("x" -> 1, "y" -> 10, "z" -> 100)
-    val expO1 = Mul(
-      Val(10), 
-      Add(
-        Val(25),
-        Var("y")))
-      
-    println(s"exp01 ${eval(expO1)}")
-  }
+  
 
   {
     // Division by zero
