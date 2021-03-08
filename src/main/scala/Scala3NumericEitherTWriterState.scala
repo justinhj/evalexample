@@ -3,7 +3,7 @@ import org.justinhj.typeclasses.numeric.{given,_}
 import org.justinhj.datatypes.WriterT
 import org.justinhj.typeclasses.monoid.{given,_}
 
-object Scala3EvalEitherTWriter extends App {
+object Scala3EvalEitherTWriterState extends App {
 
   enum EvalError:
     case InvalidSymboName
