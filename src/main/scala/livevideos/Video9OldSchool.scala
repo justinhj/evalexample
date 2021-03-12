@@ -29,15 +29,10 @@ object WriterTOldSchool extends App  {
       }
   }
 
-  // Use an implicit class conversion to add flatMap and map as methods to any WriterT ...
-
-  implicit final class WriterTOps[F[_]: Monad, W: Monoid, A](private val fa: WriterT[F,W,A]) {
-    def flatMap[B](f: A => WriterT[F,W,B]): WriterT[F,W,B] =
-      Monad[[A] =>> WriterT[F,W,A]].flatMap(fa)(a => f(a))
-
-    def map[B](f: A => B): WriterT[F,W,B] =
-      Monad[[A] =>> WriterT[F,W,A]].map(fa)(a => f(a))
-  }
+  // This is needed to help the typer with monad transformers
+  extension [F[_], A](fa: F[A])(using m: Monad[F])
+    def flatMap[B](f: A => F[B]) = m.flatMap(fa)(f)
+    def map[B](f: A => B) = m.map(fa)(f)
 
   def incrementEven(a: Int): WriterT[[A] =>> Either[String, A],String,Int] = {
     if(a % 2 == 1) WriterT(Left[String, (String, Int)]("Odd number provided"))

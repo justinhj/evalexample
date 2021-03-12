@@ -14,9 +14,20 @@ object Video9 extends App:
       WriterT(wrapped.map{(l2,a) => (m.combine(l2, faw(a)), a)})
         
   object WriterT:
-    def lift[F[_],W,A](fa: F[A])(using m: Monoid[W], f: Functor[F]): WriterT[F,W,A] =
-      WriterT(f.map(fa)(a => (m.zero, a)))
-  
+
+    def lift[W]: LiftPartiallyApplied[W] = new LiftPartiallyApplied[W]
+
+    class LiftPartiallyApplied[W](private val dummy: Boolean = true) extends AnyVal {
+      def apply[F[_],A](fa: F[A])(using f: Monad[F], m: Monoid[W]): WriterT[F, W, A] = 
+        WriterT(f.map(fa)(a => (m.zero, a)))
+    }
+    
+    def pure[F[_],W]: PurePartiallyApplied[F,W] = new PurePartiallyApplied[F,W]
+
+    class PurePartiallyApplied[F[_],W](private val dummy: Boolean = true) extends AnyVal {
+      def apply[B](b: B)(using F: Monad[F], m: Monoid[W]): WriterT[F, W, B] = WriterT(F.pure((m.zero,b)))
+    } 
+    
   implicit final class WriterTOps[F[_]: Monad, W: Monoid, A](private val fa: WriterT[F,W,A]) {
     def flatMap[B](f: A => WriterT[F,W,B]): WriterT[F,W,B] =
       Monad[[A] =>> WriterT[F,W,A]].flatMap(fa)(a => f(a))
@@ -39,7 +50,7 @@ object Video9 extends App:
     
   
   val e1 : Either[String, Int] = Right(10)
-  val we1 = WriterT.lift[[A1] =>> Either[String, A1],List[String], Int](e1)
+  val we1 = WriterT.lift[List[String]](e1)
   
   type StringEither[A] = Either[String,A]
   type StringEitherWriter[A] = WriterT[StringEither,List[String],A]
@@ -51,9 +62,9 @@ object Video9 extends App:
     if n % 2 == 1 then Right(n *2) else Left("Not an odd number")
     
   val program1: StringEitherWriter[Int] = for (
-    a <- Monad[StringEitherWriter].pure(10).tellWith(a => List(s"Initialized with $a"));
-    b <- WriterT.lift[StringEither,List[String],Int](incrementEven(a)).tellWith(a => List(s"incremented to $a"));
-    c <- WriterT.lift[StringEither,List[String],Int](doubleOdd(b)).tellWith(a => List(s"doubled to $a"))
+    a <- WriterT.pure[StringEither,List[String]](10).tellWith(a => List(s"Initialized with $a"));
+    b <- WriterT.lift[List[String]](incrementEven(a)).tellWith(a => List(s"incremented to $a"));
+    c <- WriterT.lift[List[String]](doubleOdd(b)).tellWith(a => List(s"doubled to $a"))
   ) yield c
   
   println(s"program1 $program1")

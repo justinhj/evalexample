@@ -80,10 +80,7 @@ given writerTMonad[F[_]: Monad,W: Monoid]: Monad[[X] =>> WriterT[F,W,X]] with {
    }
   }
 
-  implicit final class WriterTOps[F[_]: Monad, W: Monoid, A](private val fa: WriterT[F,W,A]) {
-    def flatMap[B](f: A => WriterT[F,W,B]): WriterT[F,W,B] =
-      Monad[[A] =>> WriterT[F,W,A]].flatMap(fa)(a => f(a))
-      
-    def map2[B,C](fb: WriterT[F,W,B])(f: (A,B) => C): WriterT[F,W,C] =
-      Monad[[A] =>> WriterT[F,W,A]].map2(fa)(fb)(f)
-  } 
+// This is needed to help the typer with monad transformers
+// see https://github.com/lampepfl/dotty/issues/11413#
+extension [F[_], A](fa: F[A])(using m: Monad[F])
+  def flatMap[B](f: A => F[B]) = m.flatMap(fa)(f)
