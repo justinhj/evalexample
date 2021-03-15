@@ -69,18 +69,15 @@ object ReaderPlay extends App:
 
   type EvalResult[A] = ReaderT[[A] =>> Either[EvalError, A], Env[A], A]
   
-  // Implement Numeric for EvalResult
-  // ReaderT[[A1] =>> Either[EvalError, A1], Env[A], A]
+  // Implement Numeric
   given evalResultNumeric[A: Numeric]: Numeric[EvalResult[A]] with {
 
     def isZero(a: EvalResult[A]): Boolean = {
-      // TODO how?
-      // Probably need to revisit this interface
-      false
-//      r => a.run(r) match {
-//        case Right(a) if summon[Numeric[A]].isZero(a) => true
-//        case _ => false
-//      }
+      val what = a.run(Map.empty[String,A])
+      what match {
+        case Right(a) if summon[Numeric[A]].isZero(a) => true
+        case _ => false
+      }
     }
 
     def add(fa: EvalResult[A], fb: EvalResult[A]): EvalResult[A] = {
@@ -172,5 +169,5 @@ object ReaderPlay extends App:
     // Division by zero
     given envMap: Env[Int] = Map.empty
     val expO1 = Div(Val(10), Val(0))
-    //println(eval(expO1).run(envMap))
+    println(eval(expO1).run(envMap))
   }
