@@ -1,5 +1,8 @@
 object IOPlay extends App:
   
+  // This is the Scala 3 implementation of the IO monad 
+  // based roughly on the red book
+  
   enum IO[A]:
     case Return(a: A) extends IO[A]
     case Suspend(resume: () => A) extends IO[A]
