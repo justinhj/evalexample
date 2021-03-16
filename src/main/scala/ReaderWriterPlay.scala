@@ -4,25 +4,25 @@ object ReaderWriterPlay extends App:
   import org.justinhj.typeclasses.numeric.{given, _}
 
   // In this one we're going to use a Reader environment that includes
-  // both the symbol table and a mutable log we can write to 
-  
+  // both the symbol table and a mutable log we can write to
+
   // ReaderT data type
   // Mostly from https://github.com/scalaz/scalaz/blob/80ba9d879b4f80f0175b5f904ac4587b02400251/core/src/main/scala/scalaz/Kleisli.scala
 
   case class ReaderT[F[_],R,A](run: R => F[A]):
-    // This lets you get at the environment 
+    // This lets you get at the environment
     def ask(using m: Monad[F]): ReaderT[F,R,R] =
       ReaderT(r => m.pure(r))
 
     def local[RR](f: RR => R): ReaderT[F, RR, A] =
       ReaderT(f andThen run)
-    
-  // Companion object 
+
+  // Companion object
 
   object ReaderT:
     def lift[F[_],R,A](fa: F[A]): ReaderT[F,R,A] = ReaderT(_ => fa)
     def ask[F[_],R](using m: Monad[F]): ReaderT[F,R,R] = ReaderT(r => m.pure(r))
-  
+
   // Monad instance
 
   given readerTMonad[F[_] : Monad,R]: Monad[[A1] =>> ReaderT[F,R,A1]] with
@@ -143,14 +143,14 @@ object ReaderWriterPlay extends App:
     println(eval(expO1).run(envMap))
   }
 
-  // A simple example 
+  // A simple example
 
   case class DbConfig(url: String, user: String)
   case class ServiceConfig(name: String)
   case class AppConfig(dbConfig: DbConfig, serviceConfig: ServiceConfig)
 
   val sampleConfig = AppConfig(DbConfig("db.com", "root"),ServiceConfig("Groot"))
-  
+
   // A pretend DB op
   def writeDB(key: String, value: Int):  ReaderT[[A] =>> Either[String,A], DbConfig, Unit] =
     ReaderT(config =>
@@ -160,7 +160,7 @@ object ReaderWriterPlay extends App:
   def startService():  ReaderT[[A] =>> Either[String,A], ServiceConfig, Unit] =
     ReaderT(config =>
       Right(println(s"Service ${config.name} started")))
-  
+
   val m = readerTMonad[[A] =>> Either[String,A],DbConfig]
   val pureTest = m.pure(10)
   val envTest = pureTest.ask.run(DbConfig("db.com", "root"))
@@ -176,17 +176,17 @@ object ReaderWriterPlay extends App:
   // local lets us change the global environnment to a local one for a computation
   // here the global is a string and our computation wants an integer
   val intReaderLocal = intReader.local[String](a => a.toInt + 1).run("22")
-  
+
   println(s"intReaderAsk $intReaderAsk intReaderLocal $intReaderLocal")
-  
-  type StringEither[A] = Either[String,A] 
-  
+
+  type StringEither[A] = Either[String,A]
+
   def prog(key: String, value: Int): ReaderT[StringEither, AppConfig, Unit] = for (
     config <- ReaderT.ask[StringEither, AppConfig];
     _ = println(s"Config is $config!");
     _ <- startService().local[AppConfig](_.serviceConfig);
-    ok <- writeDB(key,value).local[AppConfig](_.dbConfig);
-    ok2 <- writeDB(key + "2", value).local[AppConfig](_.dbConfig)
+    ok <- writeDB(key + "-1",value).local[AppConfig](_.dbConfig);
+    ok2 <- writeDB(key + "-2", value).local[AppConfig](_.dbConfig)
   ) yield (ok)
 
   println(prog("justin", 100).run(sampleConfig))
