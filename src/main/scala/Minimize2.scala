@@ -1,13 +1,99 @@
-object ReaderWriterPlay extends App:
+object Minimize2 extends App:
+
+  trait Numeric[T] {
+    def add(a: T, b: T): T
+    def mul(a: T, b: T): T
+    def div(a: T, b: T): T
+    def sub(a: T, b: T): T
+    def isZero(a: T): Boolean
+
+    extension (a: T) {
+      def +(b: T): T = add(a, b)
+      def -(b: T): T = sub(a, b)
+
+      def *(b: T): T = mul(a, b)
+      def /(b: T): T = div(a, b)
+
+      def square: T = mul(a, a)
+    }
+  }
+
+  given Numeric[Int] with {
+    def add(a: Int, b: Int): Int = a + b
+    def sub(a: Int, b: Int): Int = a - b
+
+    def mul(a: Int, b: Int): Int = a * b
+    def div(a: Int, b: Int): Int = a / b
+
+    def isZero(a: Int) = a == 0
+  }
   
-  import org.justinhj.typeclasses.monad.{eitherMonad,_}
-  import org.justinhj.typeclasses.numeric.{given, _}
+  trait Functor[F[_]]:
+    extension [A, B](x: F[A])
+      def map(f: A => B): F[B]
 
-  // In this one we're going to use a Reader environment that includes
-  // both the symbol table and a mutable log we can write to
+  given Functor[List] with {
+    extension[A,B](x: List[A])
+      def map(f: A => B): List[B] = {
+        x match {
+          case hd :: tl => f(hd) :: tl.map(f)
+          case Nil => Nil
+        }
+      }
+  }
 
-  // ReaderT data type
-  // Mostly from https://github.com/scalaz/scalaz/blob/80ba9d879b4f80f0175b5f904ac4587b02400251/core/src/main/scala/scalaz/Kleisli.scala
+  trait Applicative[F[_]] extends Functor[F]:
+  
+    def pure[A](x:A):F[A]
+  
+    extension [A,B](x: F[A])
+      def ap(f: F[A => B]): F[B]
+  
+      def map(f: A => B): F[B] = {
+        x.ap(pure(f))
+      }
+  
+    extension [A,B,C](fa: F[A]) def map2(fb: F[B])(f: (A,B) => C): F[C] = {
+      val fab: F[B => C] = fa.map((a: A) => (b: B) => f(a,b))
+      fb.ap(fab)
+    }
+
+  end Applicative
+  
+  object Monad:
+    def apply[F[_]](using m: Monad[F]) = m
+
+  trait Monad[F[_]] extends Applicative[F]:
+  
+    // The unit value for a monad
+    def pure[A](x:A):F[A]
+  
+    extension[A,B](fa :F[A])
+    // The fundamental composition operation
+      def flatMap(f :A=>F[B]):F[B]
+  
+      // Monad can also implement `ap` in terms of `map` and `flatMap`
+      def ap(fab: F[A => B]): F[B] = {
+        fab.flatMap {
+          f =>
+            fa.flatMap {
+              a =>
+                pure(f(a))
+            }
+        }
+  
+      }
+
+  end Monad
+
+  given eitherMonad[Err]: Monad[[X] =>> Either[Err,X]] with
+    def pure[A](a: A): Either[Err, A] = Right(a)
+    extension [A,B](x: Either[Err,A]) def flatMap(f: A => Either[Err, B]) = {
+      x match {
+        case Right(a) => f(a)
+        case Left(err) => Left(err)
+      }
+  }
 
   case class ReaderT[F[_],R,A](run: R => F[A]):
     // This lets you get at the environment
@@ -180,8 +266,8 @@ object ReaderWriterPlay extends App:
   type StringEither[A] = Either[String,A]
 
   def prog(key: String, value: Int): ReaderT[StringEither, AppConfig, Unit] = for (
-//    config <- ReaderT.ask[StringEither, AppConfig];
-//    _ = println(s"Config is $config!");
+    config <- ReaderT.ask[StringEither, AppConfig];
+    _ = println(s"Config is $config!");
     _ <- startService().local[AppConfig](_.serviceConfig);
     ok <- writeDB(key + "-1",value).local[AppConfig](_.dbConfig);
     ok2 <- writeDB(key + "-2", value).local[AppConfig](_.dbConfig)

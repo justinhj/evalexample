@@ -1,5 +1,3 @@
-
-
 object ReaderPlay extends App:
 
   import org.justinhj.typeclasses.monad.{eitherMonad,_}
@@ -7,18 +5,18 @@ object ReaderPlay extends App:
 
   // ReaderT data type
   // Mostly from https://github.com/scalaz/scalaz/blob/80ba9d879b4f80f0175b5f904ac4587b02400251/core/src/main/scala/scalaz/Kleisli.scala
-  
+
   case class ReaderT[F[_],R,A](run: R => F[A])
-  
+
   object ReaderT:
-    def lift[F[_],R,A](fa: F[A]): ReaderT[F,R,A] = ReaderT(_ => fa) 
+    def lift[F[_],R,A](fa: F[A]): ReaderT[F,R,A] = ReaderT(_ => fa)
 
   // Monad instance
-        
+
   given readerTMonad[F[_] : Monad,R]: Monad[[A1] =>> ReaderT[F,R,A1]] with
     def pure[A](a: A): ReaderT[F,R,A] = ReaderT(_ => Monad[F].pure(a))
-  
-    extension [A,B](fa: ReaderT[F,R,A]) 
+
+    extension [A,B](fa: ReaderT[F,R,A])
       def flatMap(f: A => ReaderT[F,R,B]) =
         val r2ReaderFRB = (r: R) => fa.run(r).flatMap(b => f(b).run(r))
         ReaderT(r2ReaderFRB)
@@ -29,7 +27,7 @@ object ReaderPlay extends App:
     case DivisionByZero
 
   type EvalResult[A] = ReaderT[[A] =>> Either[EvalError, A], Env[A], A]
-  
+
   // Implement Numeric
   given evalResultNumeric[A: Numeric]: Numeric[EvalResult[A]] with {
 
@@ -74,7 +72,7 @@ object ReaderPlay extends App:
   import Exp._
 
   type RResult[A] = ReaderT[[A1] =>> Either[EvalError, A1], Env[A], A]
-  
+
   def eval[A : Numeric](exp: Exp[A]): RResult[A] =
     exp match
       case Var(id) => handleVar(id)
@@ -90,7 +88,7 @@ object ReaderPlay extends App:
   def handleDiv[A : Numeric](l: Exp[A] , r: Exp[A] ): RResult[A] = eval(l) / eval(r)
 
   def handleVar[A](s: String): RResult[A] =
-    ReaderT((env: Env[A]) => 
+    ReaderT((env: Env[A]) =>
       env.get(s) match {
         case Some(value) => Right(value)
         case None => Left(EvalError.SymbolNotFound)
