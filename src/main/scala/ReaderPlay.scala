@@ -16,10 +16,14 @@ object ReaderPlay extends App:
   given readerTMonad[F[_] : Monad,R]: Monad[[A1] =>> ReaderT[F,R,A1]] with
     def pure[A](a: A): ReaderT[F,R,A] = ReaderT(_ => Monad[F].pure(a))
 
-    extension [A,B](fa: ReaderT[F,R,A])
-      def flatMap(f: A => ReaderT[F,R,B]) =
-        val r2ReaderFRB = (r: R) => fa.run(r).flatMap(b => f(b).run(r))
-        ReaderT(r2ReaderFRB)
+    extension [A,B](far: ReaderT[F,R,A])
+      def flatMap(f: A => ReaderT[F,R,B]) = {
+        ReaderT((r: R) => {
+          val fa: F[A] = far.run(r)
+          val fb: F[B] = fa.flatMap(b => f(b).run(r))
+          fb
+      })
+    }
 
   enum EvalError:
     case InvalidSymboName

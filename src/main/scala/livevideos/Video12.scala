@@ -1,9 +1,9 @@
 package livevideos
 
-import org.justinhj.typeclasses.monad.{given, _}
-import org.justinhj.typeclasses.numeric.{given, _}
+object Video12 extends App:
 
-object Scala3EvalEither extends App:
+  import org.justinhj.typeclasses.monad.{eitherMonad, _}
+  import org.justinhj.typeclasses.numeric.{given, _}
 
   enum EvalError:
     case InvalidSymboName
@@ -13,7 +13,7 @@ object Scala3EvalEither extends App:
   type EvalResult[A] = Either[EvalError, A]
 
   // Implement Numeric for EvalResult
-  given evalResultNumeric[A: Numeric]: Numeric[Either[EvalError, A]] with {
+  given evalResultNumeric[A: Numeric]: Numeric[EvalResult[A]] with {
 
     def isZero(a: EvalResult[A]): Boolean = {
       a match {
@@ -39,16 +39,8 @@ object Scala3EvalEither extends App:
     }
 
     def mul(a: EvalResult[A], b: EvalResult[A]): EvalResult[A] = {
-      // Note this could also use map2 but I use flatMap to demonstrate
-      // how much extra work you have to do compared to using applicative's
-      // map2 method...
-      a.flatMap {
-        aa =>
-          b.map {
-            bb =>
-              aa * bb
-          }
-      }
+        a.map2(b)((a, b) => a * b)
+
     }
   }
 
@@ -64,9 +56,7 @@ object Scala3EvalEither extends App:
 
   import Exp._
 
-  type WithEnv[A] = Env[A] ?=> Either[EvalError, A]
-
-  def summonEnv[A] : Env[A] ?=> Env[A] = summon[Env[A]]
+  type WithEnv[A] = Env[A] ?=> EvalResult[A]
 
   def eval[A : Numeric](exp: Exp[A]): WithEnv[A] =
     exp match
@@ -83,12 +73,19 @@ object Scala3EvalEither extends App:
   def handleDiv[A : Numeric](l: Exp[A] , r: Exp[A] ): WithEnv[A] = eval(l) / eval(r)
 
   def handleVar[A](s: String): WithEnv[A] =
-    summonEnv.get(s) match {
+    summon[Env[A]].get(s) match {
       case Some(value) => Right(value)
       case None => Left(EvalError.SymbolNotFound)
     }
 
-  val exp1 : Exp[Int] = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
+  // A sample expression
+  val exp1 : Exp[Int] = Add(
+                            Var("z"),
+                            Add(
+                              Val(10),
+                              Mul(
+                                Var("x"),
+                                Var("y"))))
 
   // Provide an environment and eval the expression
   {
@@ -99,7 +96,7 @@ object Scala3EvalEither extends App:
     println(s"Eval exp gives $eval1")
   }
 
-  // And again with a different environment and a missing symbol
+  // And again with a missing symbol
   {
     given envMap: Env[Int] = Map("x" -> 17, "y" -> 10, "a" -> 2)
 
@@ -108,22 +105,3 @@ object Scala3EvalEither extends App:
     println(s"Eval exp gives $eval1")
   }
 
-  {
-    // Test some operations
-    given envMap: Env[Int] = Map("x" -> 1, "y" -> 10, "z" -> 100)
-    val expO1 = Mul(Val(10), Var("y"))
-    assert(eval(expO1) == Right(100))
-
-    val expO2 = Div(Val(1000), Var("z"))
-    assert(eval(expO2) == Right(10))
-
-    val expO3 = Sub(Val(1000), Mul(Var("y"), Var("z")))
-    assert(eval(expO3) == Right(0))
-  }
-
-  {
-    // Division by zero
-    given envMap: Env[Int] = Map.empty
-    val expO1 = Div(Val(10), Val(0))
-    assert(eval(expO1) == Left(EvalError.DivisionByZero))
-  }
