@@ -12,3 +12,5 @@ The code is split into various sections.
 * Root level - example programs
 * livevideos - code you'll see me write during the videos
 * org.justinhj - code that survives the videos that forms part of a growing library
+
+Code functionally and have fun!
