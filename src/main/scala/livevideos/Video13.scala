@@ -6,11 +6,11 @@ object Video13 extends App:
   // added the writerT import 
   // todo will need to move readerT to monad 
   // change the data type 
-
+  // implemented applicative for WriterT
 
   import org.justinhj.typeclasses.monad._
   import org.justinhj.typeclasses.monad.eitherMonad
-  import org.justinhj.typeclasses.monad.writerTMonad
+  import org.justinhj.typeclasses.applicative.writerTApplicative
   import org.justinhj.typeclasses.monoid.{listMonoid,_}
   import org.justinhj.typeclasses.numeric.{given, _}
   import org.justinhj.datatypes.WriterT
@@ -46,7 +46,7 @@ object Video13 extends App:
     ] with {
 
     // Could use applicative here
-    val M = writerTMonad[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String]]
+    val M = writerTApplicative[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String]]
 
     def isZero(a: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): Boolean = {
       a.wrapped.run(Map.empty[String, A]) match {
@@ -91,7 +91,7 @@ object Video13 extends App:
   def eval[A : Numeric](exp: Exp[A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] =
     exp match
       case Var(id) => handleVar(id)
-      case Val(value) => WriterT.lift(ReaderT.lift(Right(value)))
+      case Val(value) => WriterT(ReaderT.lift(Right(List(s"Literal value $value"),value)))
       case Add(l,r) => handleAdd(l,r)
       case Sub(l,r) => handleSub(l,r)
       case Div(l,r) => handleDiv(l,r)
@@ -122,7 +122,7 @@ object Video13 extends App:
   {
     val envMap: Env[Int] = Map("x" -> 7, "y" -> 6, "z" -> 22)
 
-    val eval1 = eval(exp1).value.run(envMap)
+    val eval1 = eval(exp1).wrapped.run(envMap)
 
     println(s"Eval exp gives $eval1")
   }
@@ -131,7 +131,7 @@ object Video13 extends App:
   {
     val envMap: Env[Int] = Map("x" -> 17, "y" -> 10, "a" -> 2)
 
-    val eval1 = eval(exp1).value.run(envMap)
+    val eval1 = eval(exp1).wrapped.run(envMap)
 
     println(s"Eval exp gives $eval1")
   }
