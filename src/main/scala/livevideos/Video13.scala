@@ -11,7 +11,9 @@ object Video13 extends App:
   import org.justinhj.typeclasses.monad._
   import org.justinhj.typeclasses.monad.eitherMonad
   import org.justinhj.typeclasses.monad.writerTMonad
+  import org.justinhj.typeclasses.monoid.{listMonoid,_}
   import org.justinhj.typeclasses.numeric.{given, _}
+  import org.justinhj.datatypes.WriterT
 
   case class ReaderT[F[_],R,A](run: R => F[A])
 
@@ -39,34 +41,37 @@ object Video13 extends App:
     case DivisionByZero
 
   // Implement Numeric for EvalResult
-  given evalResultNumeric[A: Numeric]: Numeric[ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A]] with {
+  given evalResultNumeric[A: Numeric]: Numeric[
+    WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]
+    ] with {
 
-    def isZero(a: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A]): Boolean = {
+    // Could use applicative here
+    val M = writerTMonad[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String]]
 
-      a.run(Map.empty[String,A]) match {
-        case Right(a) if summon[Numeric[A]].isZero(a) => true
+    def isZero(a: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): Boolean = {
+      a.wrapped.run(Map.empty[String, A]) match {
+        case Right(a1) if summon[Numeric[A]].isZero(a1._2) => true
         case _ => false
       }
     }
 
-    def add(fa: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A], fb: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A]): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = {
-      fa.map2(fb)((a,b) => a + b)
+    def add(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
+      M.map2(fa)(fb)((a,b) => a + b)
     }
 
-    def div(a: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A], b: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A]): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = {
-      if isZero(b) then
-        ReaderT.lift(Left(EvalError.DivisionByZero))
+    def div(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
+      if isZero(fb) then
+        WriterT.lift(ReaderT.lift(Left(EvalError.DivisionByZero)))
       else
-        a.map2(b)(_ / _)
+        M.map2(fa)(fb)((a,b) => a / b)
     }
 
-    def sub(a: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A], b: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A]): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = {
-
-      a.map2(b)((a, b) => a - b)
+    def sub(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
+      M.map2(fa)(fb)((a,b) => a - b)
     }
 
-    def mul(a: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A], b: ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A]): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = {
-      a.map2(b)((a, b) => a * b)
+    def mul(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
+      M.map2(fa)(fb)((a, b) => a * b)
     }
 
   }
@@ -83,26 +88,26 @@ object Video13 extends App:
 
   import Exp._
 
-  def eval[A : Numeric](exp: Exp[A]): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] =
+  def eval[A : Numeric](exp: Exp[A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] =
     exp match
       case Var(id) => handleVar(id)
-      case Val(value) => ReaderT.lift(Right(value))
+      case Val(value) => WriterT.lift(ReaderT.lift(Right(value)))
       case Add(l,r) => handleAdd(l,r)
       case Sub(l,r) => handleSub(l,r)
       case Div(l,r) => handleDiv(l,r)
       case Mul(l,r) => handleMul(l,r)
 
-  def handleAdd[A : Numeric](l: Exp[A] , r: Exp[A] ): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = eval(l) + eval(r)
-  def handleSub[A : Numeric](l: Exp[A] , r: Exp[A] ): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = eval(l) - eval(r)
-  def handleMul[A : Numeric](l: Exp[A] , r: Exp[A] ): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = eval(l) * eval(r)
-  def handleDiv[A : Numeric](l: Exp[A] , r: Exp[A] ): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] = eval(l) / eval(r)
+  def handleAdd[A : Numeric](l: Exp[A] , r: Exp[A] ): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = eval(l) + eval(r)
+  def handleSub[A : Numeric](l: Exp[A] , r: Exp[A] ): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = eval(l) - eval(r)
+  def handleMul[A : Numeric](l: Exp[A] , r: Exp[A] ): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = eval(l) * eval(r)
+  def handleDiv[A : Numeric](l: Exp[A] , r: Exp[A] ): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = eval(l) / eval(r)
 
-  def handleVar[A](s: String): ReaderT[[A1] =>> Either[EvalError, A1], Env[A],A] =
-    ReaderT((env: Env[A]) =>
+  def handleVar[A](s: String): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] =
+    WriterT(ReaderT((env: Env[A]) =>
       env.get(s) match {
-        case Some(value) => Right(value)
+        case Some(value) => Right(List(s"Looked up var $s ($value)"),value)
         case None => Left(EvalError.SymbolNotFound)
-    })
+    }))
 
   // A sample expression
   val exp1 : Exp[Int] = Add(
@@ -117,7 +122,7 @@ object Video13 extends App:
   {
     val envMap: Env[Int] = Map("x" -> 7, "y" -> 6, "z" -> 22)
 
-    val eval1 = eval(exp1).run(envMap)
+    val eval1 = eval(exp1).value.run(envMap)
 
     println(s"Eval exp gives $eval1")
   }
@@ -126,7 +131,7 @@ object Video13 extends App:
   {
     val envMap: Env[Int] = Map("x" -> 17, "y" -> 10, "a" -> 2)
 
-    val eval1 = eval(exp1).run(envMap)
+    val eval1 = eval(exp1).value.run(envMap)
 
     println(s"Eval exp gives $eval1")
   }
