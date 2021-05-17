@@ -67,6 +67,8 @@ given writerTApplicative[F[_]: Applicative,W: Monoid]: Applicative[[X] =>> Write
 
   extension [A,B](fa: WriterT[F,W,A]) 
     def ap(ff: WriterT[F,W,A => B]): WriterT[F,W,B] = {
-      WriterT(Applicative[F].ap(fa.wrapped)(ff.wrapped.map((aw,af) => (in: (W,A)) => (aw,af(in._2)))))
+      WriterT(Applicative[F].ap(fa.wrapped)(ff.wrapped.map(
+        (aw,af) => 
+          (in: (W,A)) => ((Monoid[W].combine(in._1,aw)),af(in._2)))))
     }
   }

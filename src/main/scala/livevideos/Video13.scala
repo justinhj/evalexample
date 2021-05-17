@@ -1,36 +1,13 @@
 package livevideos
 
+import org.justinhj.typeclasses.monad._
+import org.justinhj.typeclasses.monad.eitherMonad
+import org.justinhj.typeclasses.applicative.writerTApplicative
+import org.justinhj.typeclasses.monoid.{listMonoid,_}
+import org.justinhj.typeclasses.numeric.{given, _}
+import org.justinhj.datatypes.WriterT
+
 object Video13 extends App:
-
-  // Steps, copied this from video 12
-  // added the writerT import 
-  // todo will need to move readerT to monad 
-  // change the data type 
-  // implemented applicative for WriterT
-
-  import org.justinhj.typeclasses.monad._
-  import org.justinhj.typeclasses.monad.eitherMonad
-  import org.justinhj.typeclasses.applicative.writerTApplicative
-  import org.justinhj.typeclasses.monoid.{listMonoid,_}
-  import org.justinhj.typeclasses.numeric.{given, _}
-  import org.justinhj.datatypes.WriterT
-
-  case class ReaderT[F[_],R,A](run: R => F[A])
-
-  object ReaderT:
-    def lift[F[_],R,A](fa: F[A]): ReaderT[F,R,A] = ReaderT(_ => fa)
-
-  given readerTMonad[F[_]: Monad,R]: Monad[[A1] =>> ReaderT[F,R,A1]] with
-    def pure[A](a:A): ReaderT[F,R,A] = ReaderT(_ => Monad[F].pure(a))
-
-    extension [A,B](far: ReaderT[F,R,A])
-      def flatMap(f: A => ReaderT[F,R,B]): ReaderT[F,R,B] = {
-        ReaderT((r: R) =>
-          val fa: F[A] = far.run(r)
-          val fb: F[B] = fa.flatMap(b => f(b).run(r))
-          fb
-        )
-      }
 
   import Exp._
   import Video12._
@@ -40,12 +17,24 @@ object Video13 extends App:
     case SymbolNotFound
     case DivisionByZero
 
+  def mapTell2[A,B,C,F[_],W](fa: WriterT[F,W,A],fb: WriterT[F,W,B],fabc: (A,B) => C,fabcw: (A,B,C) => W)
+                            (using m: Monoid[W], f: Monad[F]): WriterT[F,W,C] = {
+    val r = fa.wrapped.map2(fb.wrapped){
+      case ((al,a),(bl,b)) =>
+        val c = fabc(a,b)
+        val w = fabcw(a,b,c)
+        val prev = m.combine(al,bl)
+        (m.combine(prev,w),c)
+    }
+    WriterT(r)
+  }
+
   // Implement Numeric for EvalResult
   given evalResultNumeric[A: Numeric]: Numeric[
     WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]
     ] with {
 
-    // Could use applicative here
+    // Help with type inference by just summoning the applicative for ReaderT and using it explicitly  
     val M = writerTApplicative[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String]]
 
     def isZero(a: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): Boolean = {
@@ -56,22 +45,52 @@ object Video13 extends App:
     }
 
     def add(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
-      M.map2(fa)(fb)((a,b) => a + b)
+      mapTell2(fa,fb,{
+        case (a,b) =>
+          a + b
+      },
+      {
+        case (a,b,c) =>
+          List(s"Added $a to $b ($c)")
+      })
+      // Without the fancy logging it would be as simple as this 
+      // M.map2(fa)(fb)(_ + _) 
     }
 
     def div(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
       if isZero(fb) then
         WriterT.lift(ReaderT.lift(Left(EvalError.DivisionByZero)))
       else
-        M.map2(fa)(fb)((a,b) => a / b)
+        mapTell2(fa,fb,{
+          case (a,b) =>
+            a / b
+        },
+        {
+          case (a,b,c) =>
+            List(s"Divided $a by $b ($c)")
+        })
     }
 
     def sub(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
-      M.map2(fa)(fb)((a,b) => a - b)
+      mapTell2(fa,fb,{
+        case (a,b) =>
+            a - b
+        },
+        {
+          case (a,b,c) =>
+            List(s"Subtracted $a from $b ($c)")
+        })    
     }
 
     def mul(fa: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>>ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
-      M.map2(fa)(fb)((a, b) => a * b)
+      mapTell2(fa,fb,{
+          case (a,b) =>
+            a * b
+        },
+        {
+          case (a,b,c) =>
+            List(s"Multiplied $a by $b ($c)")
+        })    
     }
 
   }
@@ -110,10 +129,16 @@ object Video13 extends App:
     }))
 
   // A sample expression
-  val exp1 : Exp[Int] = Add(
+  val exp1 : Exp[Int] = Mul(
                             Var("z"),
                             Add(
-                              Val(10),
+                              Sub(
+                                Div(
+                                  Val(10),
+                                  Val(2)
+                                ),
+                                Val(2)
+                              ),
                               Mul(
                                 Var("x"),
                                 Var("y"))))
@@ -135,4 +160,3 @@ object Video13 extends App:
 
     println(s"Eval exp gives $eval1")
   }
-
