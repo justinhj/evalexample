@@ -10,7 +10,7 @@ object WriterT:
   def lift[F[_],W, A](fa: F[A])(using m: Monoid[W], F: Applicative[F]): WriterT[F,W,A] =
     WriterT(F.map(fa)(a => (m.zero, a)))
 
-case class WriterT[F[_],W,A](val wrapped: F[(W,A)]):
+case class WriterT[F[_],W,A](private val wrapped: F[(W,A)]):
   // tell let's us write to the log without affecting the current computed value
   def tell(l1: W)(using m: Monoid[W], f: Functor[F]): WriterT[F,W,A] =
     WriterT(wrapped.map{
@@ -33,3 +33,6 @@ case class WriterT[F[_],W,A](val wrapped: F[(W,A)]):
   // value is so you can grab the value and drop the log
   def value(using f: Functor[F]): F[A] =
     f.map(wrapped)(_._2)
+
+  // unwrap
+  def unwrap() = wrapped

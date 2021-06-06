@@ -17,7 +17,7 @@ object Scala3EvalEither extends App:
 
   def mapTell2[A,B,C,F[_],W](fa: WriterT[F,W,A], fb: WriterT[F,W,B], fabc: (A,B) => C, fabcw: (A,B,C) => W)
                             (using m: Monoid[W], f: Monad[F]): WriterT[F,W,C] = {
-    val r = fa.wrapped.map2(fb.wrapped){
+    val r = fa.unwrap().map2(fb.unwrap()){
       case ((al,a),(bl,b)) =>
         val c = fabc(a,b)
         val w = fabcw(a,b,c)

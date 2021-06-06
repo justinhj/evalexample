@@ -1,3 +1,4 @@
+
 package livevideos
 
 import org.justinhj.typeclasses.monad._
@@ -6,9 +7,9 @@ import org.justinhj.typeclasses.applicative.writerTApplicative
 import org.justinhj.typeclasses.monoid.{listMonoid,_}
 import org.justinhj.typeclasses.numeric.{given, _}
 import org.justinhj.datatypes.WriterT
-import org.justinhj.datatypes.{readerTMonad, ReaderT}
+import org.justinhj.datatypes.{readerTMonad,ReaderT}
 
-object Video13 extends App:
+object Video13b extends App:
  
   import Exp._
 
@@ -51,10 +52,10 @@ object Video13 extends App:
       },
       {
         case (a,b,c) =>
-          List(s"Added $a to $b ($c)")
+          List(s"Added $a to $b ($c)\n")
       })
       // Without the fancy logging it would be as simple as this 
-      // M.map2(fa)(fb)(_ + _) 
+      //M.map2(fa)(fb)(_ + _) 
     }
 
     def div(fa: WriterT[[RA] =>> ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A], fb: WriterT[[RA] =>> ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A]): WriterT[[RA] =>> ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] = {
@@ -67,7 +68,7 @@ object Video13 extends App:
         },
         {
           case (a,b,c) =>
-            List(s"Divided $a by $b ($c)")
+            List(s"Divided $a by $b ($c)\n")
         })
     }
 
@@ -78,7 +79,7 @@ object Video13 extends App:
         },
         {
           case (a,b,c) =>
-            List(s"Subtracted $b from $a ($c)")
+            List(s"Subtracted $b from $a ($c)\n")
         })    
     }
 
@@ -89,7 +90,7 @@ object Video13 extends App:
         },
         {
           case (a,b,c) =>
-            List(s"Multiplied $a by $b ($c)")
+            List(s"Multiplied $a by $b ($c)\n")
         })    
     }
 
@@ -110,7 +111,7 @@ object Video13 extends App:
   def eval[A : Numeric](exp: Exp[A]): WriterT[[RA] =>> ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] =
     exp match
       case Var(id) => handleVar(id)
-      case Val(value) => WriterT(ReaderT.lift(Right(List(s"Literal value $value"),value)))
+      case Val(value) => WriterT(ReaderT.lift(Right(List(s"Literal value $value\n"),value)))
       case Add(l,r) => handleAdd(l,r)
       case Sub(l,r) => handleSub(l,r)
       case Div(l,r) => handleDiv(l,r)
@@ -124,7 +125,7 @@ object Video13 extends App:
   def handleVar[A](s: String): WriterT[[RA] =>> ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] =
     WriterT(ReaderT((env: Env[A]) =>
       env.get(s) match {
-        case Some(value) => Right(List(s"Looked up var $s ($value)"),value)
+        case Some(value) => Right(List(s"Looked up var $s ($value)\n"),value)
         case None => Left(EvalError.SymbolNotFound)
     }))
 
@@ -149,7 +150,14 @@ object Video13 extends App:
 
     val eval1 = eval(exp1).unwrap().run(envMap)
 
-    println(s"Eval exp gives $eval1")
+    eval1.foreach {
+      result =>
+       println(s"Result is ${result._2}\n") 
+       result._1.reverse.foreach {
+        item =>
+          print(item)
+       }
+    }
   }
 
   // And again with a missing symbol
@@ -160,3 +168,4 @@ object Video13 extends App:
 
     println(s"Eval exp gives $eval1")
   }
+
