@@ -86,7 +86,7 @@ object Scala3EvalEither extends App:
       case None => Left(EvalError.SymbolNotFound)
     }
 
-  val exp1 : Exp[Int] = Add(Var("z"), Add(Val(10), Add(Var("x"), Var("y"))))
+  val exp1 : Exp[Int] = Mul(Var("z"), Add(Val(10), Sub(Var("x"), Var("y")))) 
 
   // Provide an environment and eval the expression
   {

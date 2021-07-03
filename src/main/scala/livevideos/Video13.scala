@@ -110,7 +110,9 @@ object Video13 extends App:
   def eval[A : Numeric](exp: Exp[A]): WriterT[[RA] =>> ReaderT[[EA] =>> Either[EvalError, EA], Env[A],RA],List[String],A] =
     exp match
       case Var(id) => handleVar(id)
-      case Val(value) => WriterT(ReaderT.lift(Right(List(s"Literal value $value"),value)))
+      case Val(value) => WriterT.lift(
+          ReaderT.lift(
+            Right(value))).tell(List(s"Literal value $value"))
       case Add(l,r) => handleAdd(l,r)
       case Sub(l,r) => handleSub(l,r)
       case Div(l,r) => handleDiv(l,r)
@@ -149,7 +151,13 @@ object Video13 extends App:
 
     val eval1 = eval(exp1).unwrap().run(envMap)
 
-    println(s"Eval exp gives $eval1")
+    eval1 foreach {
+      (log, value) =>
+        println(s"Result is $value\n")
+        log.foreach {
+          println(_)
+        }
+    }
   }
 
   // And again with a missing symbol

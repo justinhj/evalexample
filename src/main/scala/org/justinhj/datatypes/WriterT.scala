@@ -7,7 +7,7 @@ import org.justinhj.typeclasses.monoid.{given,_}
 
 object WriterT:
   // lift takes any monadic effect and transforms to a WriterT around that monad
-  def lift[F[_],W, A](fa: F[A])(using m: Monoid[W], F: Applicative[F]): WriterT[F,W,A] =
+  def lift[F[_],W, A](fa: F[A])(using m: Monoid[W], F: Functor[F]): WriterT[F,W,A] =
     WriterT(F.map(fa)(a => (m.zero, a)))
 
 case class WriterT[F[_],W,A](private val wrapped: F[(W,A)]):

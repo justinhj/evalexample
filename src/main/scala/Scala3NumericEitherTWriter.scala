@@ -2,6 +2,8 @@ import org.justinhj.typeclasses.monad.{given,_}
 import org.justinhj.typeclasses.numeric.{given,_}
 import org.justinhj.datatypes.WriterT
 import org.justinhj.typeclasses.monoid.{given,_}
+import org.justinhj.typeclasses.applicative.{eitherApplicative, writerTApplicative}
+import Scala3EvalEitherTWriter.EvalError
 
 object Scala3EvalEitherTWriter extends App {
 
@@ -28,6 +30,8 @@ object Scala3EvalEitherTWriter extends App {
 
   given evalResultWNumeric[A: Numeric]: Numeric[WriterT[[A1] =>> Either[EvalError, A1], List[String], A]] with
 
+    val App = writerTApplicative[[A1] =>> Either[EvalError,A1], List[String]]
+
     def isZero(fa: EvalResultW[A]): Boolean = {
       fa.value match {
         case Right(a) if summon[Numeric[A]].isZero(a) => true
@@ -36,7 +40,9 @@ object Scala3EvalEitherTWriter extends App {
     }
 
     def add(fa: EvalResultW[A], fb: EvalResultW[A]): EvalResultW[A] = {
-      mapTell2(fa,fb,(a, b) => a + b,(a,b,c) => List(s"$c: added $a to $b"))
+      App.map2(fa)(fb) {
+        case (a,b) => a + b
+      }
     }
 
     def div(a: EvalResultW[A], b: EvalResultW[A]): EvalResultW[A] = {
@@ -72,8 +78,8 @@ object Scala3EvalEitherTWriter extends App {
 
   def eval[A : Numeric](exp: Exp[A]): WithEnv[A] =
     exp match
-      case Var(id) => handleVar(id).tellWith(a => List(s"Var $id $a"))
-      case Val(value) => WriterT.lift[[A1] =>> EvalResult[A1], List[String], A](Right(value)).tellWith(a => List(s"Val $a"))
+      case Var(id) => handleVar(id)
+      case Val(value) => WriterT.lift[[A1] =>> EvalResult[A1], List[String], A](Right(value)).tell(List(s"Val $value"))
       case Add(l,r) => handleAdd(l,r)
       case Sub(l,r) => handleSub(l,r)
       case Div(l,r) => handleDiv(l,r)
@@ -86,7 +92,9 @@ object Scala3EvalEitherTWriter extends App {
 
   def handleVar[A](s: String): WithEnv[A] =
     summonEnv.get(s) match {
-      case Some(value) => WriterT.lift(Right(value))
+      case Some(value) => {
+        WriterT.lift[[A1] =>> Either[EvalError,A1],List[String],A](Right(value)).tell(List(s"Var $s ($value)"))
+      }
       case None => WriterT.lift(Left(EvalError.SymbolNotFound))
     }
 
